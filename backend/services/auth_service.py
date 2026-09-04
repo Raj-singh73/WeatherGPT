@@ -7,6 +7,7 @@ import sqlite3
 import hashlib
 import hmac
 import secrets
+import json
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Optional, Dict, Any, List, Tuple
@@ -154,6 +155,7 @@ def register_user(
         )
 
         user_row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        sync_readable_export()
         return dict(user_row), token
 
 
@@ -188,6 +190,7 @@ def authenticate_user(email: str, password: str) -> Tuple[Dict[str, Any], str]:
 
         log_activity(conn, row["id"], clean_email, "LOGIN", f"Successful login at {now_utc}")
         updated_row = conn.execute("SELECT * FROM users WHERE id = ?", (row["id"],)).fetchone()
+        sync_readable_export()
         return dict(updated_row), token
 
 
@@ -233,6 +236,7 @@ def update_profile(user_id: int, updates: Dict[str, Any]) -> Dict[str, Any]:
         row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
         if row:
             log_activity(conn, user_id, row["email"], "UPDATE_PROFILE", f"Updated fields: {list(updates.keys())}")
+            sync_readable_export()
             return dict(row)
         raise ValueError("User not found.")
 
@@ -294,5 +298,26 @@ def reset_password(email: str, new_password: str) -> Dict[str, Any]:
         conn.execute("DELETE FROM user_sessions WHERE user_id = ?", (row["id"],))
         log_activity(conn, row["id"], clean_email, "RESET_PASSWORD", f"Password reset successfully at {now_utc}")
         updated = conn.execute("SELECT * FROM users WHERE id = ?", (row["id"],)).fetchone()
+        sync_readable_export()
         return dict(updated)
+
+
+def sync_readable_export():
+    """Maintains a human-readable JSON mirror at backend/data/registered_users_log.json."""
+    try:
+        users = get_all_users_for_admin()
+        logs = get_activity_logs(50)
+        export_file = DB_DIR / "registered_users_log.json"
+        with open(export_file, "w", encoding="utf-8") as f:
+            json.dump({
+                "description": "Human-Readable Live Mirror of Registered WeatherGPT Users & Telemetry Timestamps",
+                "database_file": str(DB_PATH),
+                "total_users": len(users),
+                "last_synced_utc": datetime.now(timezone.utc).isoformat(),
+                "users": users,
+                "recent_activity_logs": logs
+            }, f, indent=2)
+    except Exception as e:
+        print(f"[AUTH] Readable export notice: {e}")
+
 
