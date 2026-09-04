@@ -22,3 +22,4 @@ export const getUserAccountAddress = (user) => {
   }
   return null;
 };
+
