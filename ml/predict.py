@@ -53,19 +53,30 @@ def _physics_risk_fallback(weather_data: Dict[str, Any]) -> Dict[str, Any]:
     t_max = float(weather_data.get("temperature_max", 30.0))
     t_min = float(weather_data.get("temperature_min", 20.0))
     soil_moisture = float(weather_data.get("soil_moisture", 45.0))
+    weather_code = int(weather_data.get("weather_code", 0))
 
     # Base score
-    score = 10.0
+    score = 8.0
+
+    # WMO Active Convective / Severe Atmospheric Hazard
+    if weather_code in (95, 96, 99):
+        score += 30.0
+    elif weather_code == 82:
+        score += 24.0
+    elif weather_code in (80, 81, 63, 65):
+        score += 15.0
 
     # Rain contribution
     if rain_1d >= 115.0 or rain_3d >= 150.0:
         score += 45.0
     elif rain_1d >= 64.5 or rain_3d >= 90.0:
         score += 30.0
-    elif rain_1d >= 30.0 or rain_3d >= 50.0:
+    elif rain_1d >= 35.6 or rain_3d >= 50.0:
         score += 20.0
-    elif rain_1d >= 10.0:
+    elif rain_1d >= 15.0:
         score += 10.0
+    elif rain_1d >= 2.5:
+        score += 4.0
 
     # Wind contribution
     if wind_gust >= 65.0:
@@ -88,7 +99,7 @@ def _physics_risk_fallback(weather_data: Dict[str, Any]) -> Dict[str, Any]:
         score += 10.0
 
     # Soil moisture saturation
-    if soil_moisture >= 80.0 and rain_1d >= 15.0:
+    if soil_moisture >= 80.0 and rain_1d >= 10.0:
         score += 15.0
 
     score = float(np.clip(round(score, 1), 0.0, 100.0))
@@ -131,7 +142,7 @@ def _physics_risk_fallback(weather_data: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 def extract_explainable_factors(input_dict: Dict[str, Any]) -> List[str]:
-    """Dynamically derives primary contributing risk factors from physical features."""
+    """Dynamically derives primary contributing risk factors from physical features and live WMO observations."""
     factors = []
     rain_1d = float(input_dict.get("rainfall_1d", input_dict.get("precipitation", 0.0)))
     rain_3d = float(input_dict.get("rainfall_3d", rain_1d))
@@ -142,38 +153,64 @@ def extract_explainable_factors(input_dict: Dict[str, Any]) -> List[str]:
     t_min = float(input_dict.get("temperature_min", 20.0))
     soil_moisture = float(input_dict.get("soil_moisture", 40.0))
     anomaly = float(input_dict.get("rainfall_anomaly", 0.0))
-    
+    weather_code = int(input_dict.get("weather_code", 0))
+
+    # 1. WMO Atmospheric Convective Events
+    if weather_code in (95, 96, 99):
+        factors.append("Active convective thunderstorm and lightning activity")
+    elif weather_code == 82:
+        factors.append("Violent cloudburst-scale rain shower event")
+    elif weather_code in (71, 73, 75, 77):
+        factors.append("Sub-zero atmospheric freezing precipitation / snowfall")
+
+    # 2. Precipitation Accumulation (IMD Scale)
     if rain_1d >= 115.0:
         factors.append(f"Very heavy rainfall event ({rain_1d} mm/24h)")
     elif rain_1d >= 64.5:
         factors.append(f"Heavy rainfall forecast ({rain_1d} mm/24h)")
-    elif rain_1d >= 30.0:
-        factors.append(f"Elevated 24h rainfall ({rain_1d} mm)")
-        
+    elif rain_1d >= 35.6:
+        factors.append(f"Rather heavy rain accumulation ({rain_1d} mm/24h)")
+    elif rain_1d >= 15.0:
+        factors.append(f"Moderate rainfall accumulation ({rain_1d} mm)")
+    elif rain_1d >= 2.5:
+        factors.append(f"Light precipitation measured ({rain_1d} mm)")
+
     if rain_3d >= 120.0:
         factors.append(f"High cumulative 3-day rainfall ({rain_3d} mm)")
     if anomaly > 1.5 and rain_1d > 10.0:
         factors.append(f"Significant rainfall anomaly ({anomaly*100:+.0f}% above normal)")
-        
+
+    # 3. Wind & Gale
     if wind_gust >= 65.0:
         factors.append(f"Severe gale wind gusts ({wind_gust} km/h)")
     elif wind_gust >= 45.0:
         factors.append(f"Strong gusty winds ({wind_gust} km/h)")
-        
+    elif wind_gust >= 35.0:
+        factors.append(f"Moderate wind gusts ({wind_gust} km/h)")
+
+    # 4. Barometric Pressure
     if pressure < 985.0:
-        factors.append(f"Deep barometric pressure depression ({pressure} hPa)")
-        
+        factors.append(f"Deep cyclonic barometric depression ({pressure} hPa)")
+    elif pressure < 998.0:
+        factors.append(f"Low pressure atmospheric trough ({pressure} hPa)")
+
+    # 5. Temperature Stress
     if t_max >= 44.0:
         factors.append(f"Extreme heatwave temperature ({t_max}°C)")
+    elif t_max >= 40.0:
+        factors.append(f"Elevated summer heat stress ({t_max}°C)")
     elif t_min <= 5.0:
         factors.append(f"Severe cold wave temperature ({t_min}°C)")
-        
-    if soil_moisture >= 75.0 and rain_1d > 20.0:
+    elif t_min <= 8.0:
+        factors.append(f"Cold wave conditions ({t_min}°C)")
+
+    # 6. Hydrological Soil Saturation
+    if soil_moisture >= 75.0 and rain_1d > 10.0:
         factors.append(f"Saturated soil moisture ({soil_moisture}%) elevating waterlogging risk")
-        
+
     if not factors:
         factors.append("All meteorological parameters within normal seasonal thresholds")
-        
+
     return factors
 
 def predict_weather_risk(weather_data: Dict[str, Any]) -> Dict[str, Any]:

@@ -30,6 +30,80 @@ def get_meteorological_season(month: int) -> str:
     else:
         return "Post-Monsoon"
 
+def assess_current_weather_risk(
+    location: str,
+    lat: float,
+    lon: float,
+    temperature: float,
+    humidity: float,
+    precipitation: float,
+    wind_speed: float,
+    wind_gust: float,
+    surface_pressure: float,
+    weather_code: int = 0,
+    climatology: float = 12.0
+) -> Dict[str, Any]:
+    """
+    Evaluates real-time live sensor weather metrics using the ML risk model and physical constraints.
+    Computes exact risk score (0-100), risk level (LOW/MODERATE/HIGH/SEVERE), confidence,
+    and explainability factors directly from live current observations.
+    """
+    now = datetime.now()
+    month = now.month
+    doy = now.timetuple().tm_yday
+    season = get_meteorological_season(month)
+
+    # Physical soil saturation: baseline 35%, modulated by active rain and humidity
+    soil_moisture = float(min(98.0, max(25.0, 35.0 + min(precipitation * 2.2, 50.0) + (humidity - 55.0) * 0.2)))
+
+    # Estimate diurnal temperature range from instantaneous reading
+    t_max = max(temperature, temperature + 2.8)
+    t_min = min(temperature, max(4.0, temperature - 5.5))
+    t_mean = (t_max + t_min) / 2.0
+
+    # Local precipitation anomaly
+    anomaly = (precipitation - climatology) / max(climatology, 0.01) if precipitation > 0 else -1.0
+
+    # Physical safety bounds for severe convective storms
+    adjusted_gust = max(wind_gust, wind_speed * 1.3)
+    if weather_code in (95, 96, 99) and adjusted_gust < 42.0:
+        adjusted_gust = 45.0
+    if weather_code == 82 and precipitation < 12.0:
+        precipitation = max(precipitation, 15.0)
+
+    weather_input = {
+        "location": location,
+        "latitude": lat,
+        "longitude": lon,
+        "temperature_mean": t_mean,
+        "temperature_max": t_max,
+        "temperature_min": t_min,
+        "humidity_mean": humidity,
+        "humidity_max": min(98.0, humidity + 15.0),
+        "wind_speed": wind_speed,
+        "wind_gust": adjusted_gust,
+        "surface_pressure": surface_pressure,
+        "precipitation": precipitation,
+        "rainfall_1d": precipitation,
+        "rainfall_3d": precipitation * 1.3,
+        "rainfall_7d": precipitation * 1.8,
+        "rainfall_30d": max(precipitation * 2.5, climatology * 1.5),
+        "rainfall_climatology": climatology,
+        "rainfall_anomaly": anomaly,
+        "rainfall_anomaly_percent": anomaly * 100.0,
+        "temperature_change_24h": 0.0,
+        "rainfall_change_24h": precipitation,
+        "soil_moisture": soil_moisture,
+        "weather_code": weather_code,
+        "month": month,
+        "day_of_year": doy,
+        "season": season
+    }
+
+    result = predict_weather_risk(weather_input)
+    result["soil_moisture"] = round(soil_moisture, 1)
+    return result
+
 def assess_risk_from_daily_features(
     location: str,
     lat: float,
@@ -40,11 +114,12 @@ def assess_risk_from_daily_features(
     wind_gust: float,
     climatology: float = 12.0,
     humidity: float = 65.0,
+    weather_code: int = 0,
     date_str: Optional[str] = None
 ) -> Dict[str, Any]:
     """Helper to predict risk from basic forecast parameters with dynamic date/season grounding."""
     t_mean = (t_max + t_min) / 2.0
-    anomaly = (precipitation - climatology) / max(climatology, 0.01)
+    anomaly = (precipitation - climatology) / max(climatology, 0.01) if precipitation > 0 else -1.0
     
     # Soil moisture proxy: scales with rain volume
     soil_moisture = float(np_clip_soil(precipitation))
@@ -89,15 +164,18 @@ def assess_risk_from_daily_features(
         "temperature_change_24h": 0.0,
         "rainfall_change_24h": precipitation,
         "soil_moisture": soil_moisture,
+        "weather_code": weather_code,
         "month": month,
         "day_of_year": doy,
         "season": season
     }
     
-    return predict_weather_risk(weather_input)
+    res = predict_weather_risk(weather_input)
+    res["soil_moisture"] = round(soil_moisture, 1)
+    return res
 
 def np_clip_soil(precipitation: float) -> float:
-    return min(95.0, 42.0 + min(precipitation * 0.75, 48.0))
+    return min(95.0, 38.0 + min(precipitation * 0.75, 52.0))
 
 def predict_custom_risk(req_dict: Dict[str, Any]) -> Dict[str, Any]:
     """
