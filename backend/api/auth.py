@@ -1,4 +1,4 @@
-﻿"""
+"""
 auth.py - Authentication & Profile API Router for WeatherGPT
 Endpoints for user registration, login, profile management, session tracking, and database telemetry.
 """
@@ -123,12 +123,28 @@ def logout(user: Dict[str, Any] = Depends(get_current_user)):
     return {"status": "success", "message": "Successfully logged out."}
 
 
+ADMIN_EMAILS = {"rajsingh700777@gmail.com", "admin@weathergpt.io"}
+
+
+def check_is_admin(user: Dict[str, Any]) -> bool:
+    email = user.get("email", "").lower().strip()
+    role = user.get("role", "").lower().strip()
+    return role == "admin" or email in ADMIN_EMAILS or user.get("id") == 1
+
+
 @router.get("/admin/records", response_model=AdminRecordsResponse)
-def get_admin_records():
+def get_admin_records(user: Dict[str, Any] = Depends(get_current_user)):
     """
     Admin & telemetry endpoint: Inspects all registered user records with exact
     creation timestamps, last login timestamps, and system activity logs in the database.
+    Restricted strictly to the platform administrator.
     """
+    if not check_is_admin(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access restricted. Only the platform administrator can view database records."
+        )
+
     users = auth_service.get_all_users_for_admin()
     logs = auth_service.get_activity_logs(limit=50)
     return AdminRecordsResponse(
@@ -136,3 +152,4 @@ def get_admin_records():
         users=users,
         recent_logs=logs
     )
+

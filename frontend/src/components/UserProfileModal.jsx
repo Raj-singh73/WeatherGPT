@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, User, Mail, Phone, MapPin, Sprout, 
   Calendar, Clock, Database, LogOut, CheckCircle2, 
@@ -123,6 +123,11 @@ export default function UserProfileModal({
     }
   };
 
+  const isAdmin = user?.role === 'Admin' || 
+                  user?.email?.toLowerCase() === 'rajsingh700777@gmail.com' || 
+                  user?.email?.toLowerCase() === 'admin@weathergpt.io' || 
+                  user?.id === 1;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
       <div 
@@ -147,7 +152,7 @@ export default function UserProfileModal({
               <div className="flex items-center space-x-2">
                 <h2 className="text-xl font-black tracking-tight text-white">{user.name}</h2>
                 <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-400/30">
-                  {user.role || 'Farmer'}
+                  {isAdmin ? '🛡️ Administrator' : user.role || 'Farmer'}
                 </span>
               </div>
               <p className="text-xs text-slate-300 flex items-center space-x-1.5 mt-0.5">
@@ -157,31 +162,33 @@ export default function UserProfileModal({
             </div>
           </div>
 
-          {/* Navigation Tabs */}
-          <div className="flex bg-white/10 p-1 rounded-xl mt-5 backdrop-blur-xs">
-            <button
-              onClick={() => setActiveTab('profile')}
-              className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1.5 ${
-                activeTab === 'profile' 
-                  ? 'bg-white text-slate-900 shadow-sm' 
-                  : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              <User className="h-3.5 w-3.5" />
-              <span>My Profile & Preferences</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('database')}
-              className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1.5 ${
-                activeTab === 'database' 
-                  ? 'bg-white text-slate-900 shadow-sm' 
-                  : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              <Database className="h-3.5 w-3.5" />
-              <span>Database Telemetry Records</span>
-            </button>
-          </div>
+          {/* Navigation Tabs - ONLY visible to Admin/Owner */}
+          {isAdmin && (
+            <div className="flex bg-white/10 p-1 rounded-xl mt-5 backdrop-blur-xs">
+              <button
+                onClick={() => setActiveTab('profile')}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'profile' 
+                    ? 'bg-white text-slate-900 shadow-sm' 
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                <User className="h-3.5 w-3.5" />
+                <span>My Profile & Preferences</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('database')}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1.5 ${
+                  activeTab === 'database' 
+                    ? 'bg-white text-slate-900 shadow-sm' 
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                <Database className="h-3.5 w-3.5" />
+                <span>Admin Database Records</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Scrollable Content */}
