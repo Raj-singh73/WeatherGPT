@@ -62,7 +62,7 @@ export default function AboutPage() {
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
         <div className="flex items-center space-x-2 text-xs font-bold text-sky-700 mb-2 uppercase tracking-wider">
           <Award className="h-4 w-4" />
-          <span>Smart India Hackathon 2026 • Problem Statement SIH26068</span>
+          <span>Conversational AI for Weather Intelligence, Early Warning & Climate Action</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
           Weather<span className="text-sky-600">GPT</span> Architecture & Provenance
@@ -157,12 +157,12 @@ export default function AboutPage() {
           </div>
         </div>
 
-        {/* SIH Honesty & Safety Guarantee */}
+        {/* Scientific Honesty & Safety Guarantee */}
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex items-center space-x-2 mb-3 text-amber-600">
               <ShieldCheck className="h-4 w-4" />
-              <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">SIH Honesty & Integrity Guarantee</h3>
+              <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Scientific Honesty & Integrity Guarantee</h3>
             </div>
             <p className="text-xs text-slate-700 leading-relaxed mb-3">
               WeatherGPT strictly complies with transparent AI evaluation standards:

@@ -54,9 +54,6 @@ export default function Navbar({
                 <span className="text-base sm:text-lg font-black tracking-tight text-slate-900">
                   Weather<span className="text-sky-600">GPT</span>
                 </span>
-                <span className="text-[9px] uppercase font-bold tracking-widest bg-sky-100 text-sky-700 border border-sky-200 px-1.5 py-0.5 rounded-full">
-                  SIH
-                </span>
               </div>
               <p className="text-[10px] text-slate-500 hidden xl:block leading-tight">{t.tagline}</p>
             </div>

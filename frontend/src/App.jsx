@@ -225,8 +225,8 @@ export default function App() {
       {/* Bottom Global Provenance & Hackathon Footer */}
       <footer className="border-t border-slate-200 bg-white py-5 text-center text-xs text-slate-500 mt-auto shadow-sm">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p>
-            WeatherGPT Prototype • SIH 2026 Problem Statement <strong className="text-slate-800">SIH26068</strong>
+          <p className="font-medium text-slate-700">
+            WeatherGPT — AI Weather Intelligence & Agro-Climatic Advisory Platform
           </p>
           <p className="text-[11px] text-slate-500">
             Powered by Open-Meteo API, ISRO NRSC VIC Hydrological Data & IMD Gridded Climatology

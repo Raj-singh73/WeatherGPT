@@ -95,7 +95,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
           <div>
             <div className="flex items-center space-x-2 text-xs font-extrabold text-rose-600 mb-1.5 uppercase tracking-wider">
               <ShieldAlert className="h-4 w-4" />
-              <span>SIH 2026 Problem Statement SIH26068 Multi-Hazard Warning Engine</span>
+              <span>Multi-Hazard Early Warning & Impact Engine</span>
             </div>
             
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
@@ -249,7 +249,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
                   <p>{alert.summary}</p>
                 </div>
 
-                {/* 🚨 LIFE SURVIVAL PROTOCOLS (SIH TOPIC 68 MANDATE) */}
+                {/* 🚨 LIFE SURVIVAL PROTOCOLS */}
                 {alert.life_survival_protocols && alert.life_survival_protocols.length > 0 && (
                   <div className="bg-rose-50/90 border border-rose-200 rounded-2xl p-4 mb-4 shadow-xs">
                     <h4 className="font-black text-rose-950 text-xs uppercase tracking-wider mb-2.5 flex items-center gap-2">
