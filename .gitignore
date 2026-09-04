@@ -42,3 +42,5 @@ Thumbs.db
 *.db-wal
 
 *.db
+
+backend/data/registered_users_log.json
