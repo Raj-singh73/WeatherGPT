@@ -289,19 +289,57 @@ export default function LocationHierarchyModal({
     setIsDetectingGps(true);
     setGpsError('');
     setGpsStatus('Acquiring high-accuracy satellite/device coordinates...');
-    setDetectedGpsLocation(null);
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude, longitude, accuracy } = pos.coords;
+        const initialGpsPayload = {
+          name: `GPS (${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E)`,
+          village: 'GPS Location',
+          district: 'GPS Coordinates',
+          state: 'India',
+          lat: latitude,
+          lon: longitude,
+          latitude: latitude,
+          longitude: longitude,
+          elevation: 240,
+          source: 'Satellite GPS Sensor'
+        };
+        setCustomCoordinates({ lat: latitude, lon: longitude, elevation: 240 });
+        setDetectedGpsLocation(initialGpsPayload);
         setGpsStatus(`GPS Satellite Lock: ${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E (Accuracy: ±${Math.round(accuracy || 15)}m). Reverse-geocoding exact village...`);
         try {
           const exactAddr = await api.reverseGeocode(latitude, longitude);
-          setDetectedGpsLocation(exactAddr);
-          setGpsStatus('✅ Precise Location Verified!');
+          if (exactAddr) {
+            const isGeneric = !exactAddr.district || 
+                              (exactAddr.district || '').toLowerCase().includes('local') ||
+                              (exactAddr.district || '').toLowerCase().includes('gps') ||
+                              (exactAddr.village || '').toLowerCase().includes('local');
+            const cleanGpsObj = {
+              ...initialGpsPayload,
+              ...exactAddr,
+              name: isGeneric ? `GPS (${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E)` : (exactAddr.name || `GPS (${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E)`),
+              lat: latitude,
+              lon: longitude,
+              latitude: latitude,
+              longitude: longitude,
+              elevation: exactAddr.elevation || 240
+            };
+            setDetectedGpsLocation(cleanGpsObj);
+            if (!isGeneric && exactAddr.state && stateOptions.includes(exactAddr.state)) {
+              setSelectedState(exactAddr.state);
+            }
+            if (!isGeneric && exactAddr.district) {
+              setSelectedDistrict(exactAddr.district);
+            }
+            if (!isGeneric && exactAddr.village) {
+              setSelectedVillage(exactAddr.village);
+            }
+            setGpsStatus(`✅ Precise Location Verified: ${cleanGpsObj.name}`);
+          }
         } catch (err) {
           console.warn('Reverse geocode error:', err);
-          setGpsError('Coordinate captured, but reverse-geocoding service was unreachable.');
+          setGpsStatus(`✅ GPS Coordinates Locked: ${latitude.toFixed(4)}°N, ${longitude.toFixed(4)}°E`);
         } finally {
           setIsDetectingGps(false);
         }
@@ -314,16 +352,20 @@ export default function LocationHierarchyModal({
     );
   };
 
-  // Direct selection of an item from Suggestions, Detected Village, or PIN lookup
+  // Direct selection of an item from Suggestions, Detected Village, GPS, or PIN lookup
   const handleSelectExactLocation = (item) => {
     if (item.state && stateOptions.includes(item.state)) {
       setSelectedState(item.state);
     }
-    if (item.district) setSelectedDistrict(item.district);
-    if (item.village) setSelectedVillage(item.village);
+    if (item.district && !item.district.toLowerCase().includes('local')) {
+      setSelectedDistrict(item.district);
+    }
+    if (item.village && !item.village.toLowerCase().includes('local')) {
+      setSelectedVillage(item.village);
+    }
 
-    const chosenLat = item.lat ?? item.latitude;
-    const chosenLon = item.lon ?? item.longitude;
+    const chosenLat = item.lat ?? item.latitude ?? customCoordinates?.lat;
+    const chosenLon = item.lon ?? item.longitude ?? customCoordinates?.lon;
 
     if (chosenLat != null && chosenLon != null) {
       setCustomCoordinates({ lat: chosenLat, lon: chosenLon, elevation: item.elevation || 240 });
@@ -331,17 +373,25 @@ export default function LocationHierarchyModal({
 
     const formatCleanName = (vName, dName, fallback) => {
       const base = (vName || fallback || '').trim();
-      if (!dName) return base;
+      if (!dName || dName.toLowerCase().includes('local') || dName.toLowerCase().includes('gps')) return base;
       if (base.toLowerCase().includes(dName.toLowerCase())) return base;
       return `${base} (${dName})`;
     };
 
+    const isExplicitGps = item.source?.toLowerCase().includes('gps') || 
+                          (item.name && item.name.startsWith('GPS')) ||
+                          (!item.district || item.district.toLowerCase().includes('gps') || item.district.toLowerCase().includes('local'));
+
+    const displayName = isExplicitGps
+      ? (item.name && item.name.startsWith('GPS') ? item.name : `GPS (${chosenLat?.toFixed(4)}°N, ${chosenLon?.toFixed(4)}°E)`)
+      : formatCleanName(item.village, item.district, item.name || item.district);
+
     if (onSelectLocation) {
       onSelectLocation({
-        name: formatCleanName(item.village, item.district, item.name || item.district),
-        village: item.village || item.name,
-        district: item.district,
-        state: item.state,
+        name: displayName,
+        village: item.village || item.name || displayName,
+        district: item.district || '',
+        state: item.state || 'India',
         lat: chosenLat != null ? chosenLat : 21.1458,
         lon: chosenLon != null ? chosenLon : 79.0882,
         latitude: chosenLat != null ? chosenLat : 21.1458,
@@ -353,8 +403,34 @@ export default function LocationHierarchyModal({
     }
   };
 
-  // Confirm cascade selection
+  // Confirm cascade or active tab selection
   const handleConfirm = () => {
+    // 1. If currently on GPS tab, apply detected GPS location or captured coordinates
+    if (activeTab === 'gps') {
+      if (detectedGpsLocation) {
+        handleSelectExactLocation(detectedGpsLocation);
+        return;
+      }
+      if (customCoordinates?.lat != null && customCoordinates?.lon != null) {
+        handleSelectExactLocation({
+          name: `GPS (${customCoordinates.lat.toFixed(4)}°N, ${customCoordinates.lon.toFixed(4)}°E)`,
+          village: 'GPS Location',
+          district: 'GPS Coordinates',
+          state: 'India',
+          lat: customCoordinates.lat,
+          lon: customCoordinates.lon,
+          latitude: customCoordinates.lat,
+          longitude: customCoordinates.lon,
+          elevation: customCoordinates.elevation || 240,
+          source: 'Satellite GPS'
+        });
+        return;
+      }
+      // If GPS not triggered yet, trigger detection
+      handleGpsDetect();
+      return;
+    }
+
     const vObj = activeVillageObject;
     const villageName = vObj?.name || selectedVillage || `${selectedDistrict} Sadar`;
     const chosenLat = vObj?.lat ?? customCoordinates?.lat ?? 21.1458;

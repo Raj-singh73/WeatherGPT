@@ -18,7 +18,7 @@ from config import settings
 from rag.retriever import get_retriever
 from services.weather_service import get_current_weather, get_forecast, resolve_location, compute_calibrated_rain_probability
 from services.ml_service import assess_risk_from_daily_features
-from services.farmer_service import get_current_agricultural_season, CROP_VALID_SEASONS, CROP_THRESHOLDS
+from services.farmer_service import get_current_agricultural_season, CROP_VALID_SEASONS
 
 # Priority Intent Categories & Multi-Language Triggers
 # NOTE: High-specificity intents must precede general ones to prevent false matches
@@ -775,12 +775,7 @@ def evaluate_use_case_decision(
             in_crops_str = ", ".join(in_season_crops)
             verdict = "NOT_RECOMMENDED"
             badge = f"🔴 NOT RECOMMENDED (OFF-SEASON CROP)"
-            crop_prof = CROP_THRESHOLDS.get(crop_target, CROP_THRESHOLDS["Wheat"])
-            opt_min, opt_max = crop_prof.get("optimal_temp_range", (15.0, 28.0))
-            mean_temp = (f1.temperature_max + f1.temperature_min) / 2.0 if f1 else temp
-            temp_pen = max(0.0, mean_temp - opt_max) * 1.8 if mean_temp > opt_max else max(0.0, opt_min - mean_temp) * 1.8
-            rain_pen = min(three_day_rain * 0.75, 14.0)
-            score = float(max(min(round(38.0 - temp_pen - rain_pen, 1), 42.0), 12.0))
+            score = 18.0
             steps = [
                 f"{crop_target} is an off-season crop during {season_name_en}.",
                 f"In one season, only season-appropriate crops will grow. Do NOT sow {crop_target} now.",

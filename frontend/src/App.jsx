@@ -69,6 +69,8 @@ export default function App() {
 
   const [selectedCoordinates, setSelectedCoordinates] = useState(() => {
     try {
+      const savedCoords = localStorage.getItem('weathergpt_coordinates') || sessionStorage.getItem('weathergpt_coordinates');
+      if (savedCoords) return JSON.parse(savedCoords);
       const cached = localStorage.getItem('weathergpt_cached_weather_' + (initialLoc || 'nagpur').toLowerCase());
       if (cached) {
         const parsed = JSON.parse(cached);
@@ -155,6 +157,9 @@ export default function App() {
     if (addr) {
       localStorage.removeItem('weathergpt_manual_location');
       sessionStorage.removeItem('weathergpt_manual_location');
+      localStorage.removeItem('weathergpt_coordinates');
+      sessionStorage.removeItem('weathergpt_coordinates');
+      setSelectedCoordinates(null);
       setSelectedLocation(addr);
     }
   };
@@ -169,6 +174,9 @@ export default function App() {
     localStorage.removeItem('weathergpt_user');
     localStorage.removeItem('weathergpt_manual_location');
     sessionStorage.removeItem('weathergpt_manual_location');
+    localStorage.removeItem('weathergpt_coordinates');
+    sessionStorage.removeItem('weathergpt_coordinates');
+    setSelectedCoordinates(null);
     setCurrentUser(null);
     setSelectedLocation('Nagpur');
     setIsProfileModalOpen(false);
@@ -180,9 +188,9 @@ export default function App() {
     setLoading(true);
     setHasConnectionError(false);
 
-    // Only pass lat/lon if they were explicitly provided for this specific location
-    const targetLat = lat != null ? lat : null;
-    const targetLon = lon != null ? lon : null;
+    // Prefer explicitly provided coordinates; fallback to active selectedCoordinates
+    const targetLat = lat != null ? lat : (selectedCoordinates?.lat ?? null);
+    const targetLon = lon != null ? lon : (selectedCoordinates?.lon ?? null);
 
     Promise.allSettled([
       api.getCurrentWeather(locName, targetLat, targetLon),
@@ -203,7 +211,9 @@ export default function App() {
           setCurrentWeather(weatherPayload);
           localStorage.setItem('weathergpt_cached_weather_' + locName.toLowerCase(), JSON.stringify(weatherPayload));
           if (currRes.value.latitude && currRes.value.longitude) {
-            setSelectedCoordinates({ lat: currRes.value.latitude, lon: currRes.value.longitude });
+            const newCoords = { lat: currRes.value.latitude, lon: currRes.value.longitude };
+            setSelectedCoordinates(newCoords);
+            localStorage.setItem('weathergpt_coordinates', JSON.stringify(newCoords));
           }
           loadedAny = true;
         }
@@ -234,7 +244,7 @@ export default function App() {
       skipNextLoadRef.current = false;
       return;
     }
-    loadData(selectedLocation, null, null);
+    loadData(selectedLocation, selectedCoordinates?.lat, selectedCoordinates?.lon);
   }, [selectedLocation]);
 
   // Handler when user confirms location from the State ➔ District ➔ Block ➔ Village modal or map
@@ -246,15 +256,21 @@ export default function App() {
     if (loc.isAccountReset) {
       localStorage.removeItem('weathergpt_manual_location');
       sessionStorage.removeItem('weathergpt_manual_location');
+      localStorage.removeItem('weathergpt_coordinates');
+      sessionStorage.removeItem('weathergpt_coordinates');
+      setSelectedCoordinates(null);
     } else {
       localStorage.setItem('weathergpt_manual_location', loc.name);
       sessionStorage.setItem('weathergpt_manual_location', loc.name);
+      if (chosenLat != null && chosenLon != null) {
+        const coordObj = { lat: chosenLat, lon: chosenLon };
+        localStorage.setItem('weathergpt_coordinates', JSON.stringify(coordObj));
+        sessionStorage.setItem('weathergpt_coordinates', JSON.stringify(coordObj));
+        setSelectedCoordinates(coordObj);
+      }
     }
 
     setSelectedLocation(loc.name);
-    if (chosenLat != null && chosenLon != null) {
-      setSelectedCoordinates({ lat: chosenLat, lon: chosenLon });
-    }
 
     // Instantly update current weather station coordinates so map instantly repositions
     setCurrentWeather(prev => ({
@@ -273,6 +289,9 @@ export default function App() {
   const handleManualLocationSelect = (locName) => {
     localStorage.setItem('weathergpt_manual_location', locName);
     sessionStorage.setItem('weathergpt_manual_location', locName);
+    localStorage.removeItem('weathergpt_coordinates');
+    sessionStorage.removeItem('weathergpt_coordinates');
+    setSelectedCoordinates(null);
     setSelectedLocation(locName);
   };
 

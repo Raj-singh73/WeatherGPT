@@ -696,10 +696,10 @@ def reverse_geocode(lat: float = Query(...), lon: float = Query(...)):
 
     return {
         "status": "partial",
-        "name": f"GPS Location ({lat:.4f}°N, {lon:.4f}°E)",
-        "village": "Local Village",
-        "block": "Local Block",
-        "district": "Local District",
+        "name": f"GPS ({lat:.4f}°N, {lon:.4f}°E)",
+        "village": f"GPS Location",
+        "block": "GPS Coordinates",
+        "district": "GPS Coordinates",
         "state": "India",
         "lat": lat,
         "lon": lon,

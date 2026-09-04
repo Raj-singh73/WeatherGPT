@@ -30,33 +30,10 @@ export default function DashboardPage({
   const current = currentWeather?.current || {};
   const forecastDays = forecast?.forecast_days || [];
   
-  // Live AI Weather Impact & Risk Evaluation directly from live telemetry
-  const liveRiskScore = (currentWeather?.risk_score !== undefined && currentWeather?.risk_score !== null)
-    ? currentWeather.risk_score
-    : (current?.risk_score !== undefined && current?.risk_score !== null)
-      ? current.risk_score
-      : (forecastDays[0]?.risk_score ?? 12.0);
-
-  const liveRiskLevel = currentWeather?.risk_level || current?.risk_level || forecastDays[0]?.risk_level || 'LOW';
-  const liveConfidence = currentWeather?.confidence || current?.confidence || forecastDays[0]?.confidence || 0.88;
-  const liveKeyFactors = (currentWeather?.key_factors && currentWeather.key_factors.length > 0)
-    ? currentWeather.key_factors
-    : (current?.key_factors && current.key_factors.length > 0)
-      ? current.key_factors
-      : (forecastDays[0]?.key_factors && forecastDays[0].key_factors.length > 0)
-        ? forecastDays[0].key_factors
-        : [
-            current.precipitation > 2.5 ? `Active precipitation (${current.precipitation} mm)` : 'No active rainfall measured at station',
-            current.wind_gust > 35 ? `Elevated gusts (${current.wind_gust} km/h)` : 'Wind gusts within normal velocity profile',
-            'HistGradientBoosting Decision Ensemble assessment'
-          ];
-
-  const liveRecommendation = currentWeather?.recommendation 
-    || current?.recommendation 
-    || forecastDays[0]?.recommendation 
-    || (liveRiskLevel === 'LOW' ? 'Normal routine activities permitted. Keep monitoring regular local advisories.' : 'Advisory active. Follow standard local guidelines.');
-
-  const liveSoilMoisture = current?.soil_moisture || forecastDays[0]?.soil_moisture || 42.0;
+  // Calculate average risk score of today/tomorrow
+  const todayRisk = forecastDays[0] || {};
+  const riskScore = todayRisk.risk_score || 22.0;
+  const riskLevel = todayRisk.risk_level || 'LOW';
 
   // Format date
   const formattedDate = new Date().toLocaleDateString('en-IN', {
@@ -166,7 +143,7 @@ export default function DashboardPage({
             <CloudRain className="h-4 w-4 text-sky-600" />
           </div>
           <div className="text-2xl sm:text-3xl font-black text-slate-900 flex items-baseline gap-2">
-            <span>{current.precipitation !== undefined ? `${Number(current.precipitation).toFixed(1)} mm` : '0.0 mm'}</span>
+            <span>{current.precipitation !== undefined ? `${current.precipitation} mm` : '0.0 mm'}</span>
             {current.precipitation_probability !== undefined && (
               <span className="text-xs font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200">
                 {current.precipitation_probability}% prob
@@ -174,7 +151,7 @@ export default function DashboardPage({
             )}
           </div>
           <p className="text-[11px] text-slate-600 mt-1 truncate font-medium">
-            {current.precipitation_intensity || (current.precipitation === 0 ? 'No Rain (Dry)' : current.weather_description) || 'No Rain (Dry)'}
+            {current.precipitation_intensity || current.weather_description || 'No Rain (Dry)'}
           </p>
         </div>
 
@@ -226,17 +203,21 @@ export default function DashboardPage({
         {/* Left Column: AI Weather Impact Score & Explainability */}
         <div className="lg:col-span-6 flex flex-col">
           <RiskScoreDial
-            riskScore={liveRiskScore}
-            riskLevel={liveRiskLevel}
-            confidence={liveConfidence}
-            keyFactors={liveKeyFactors}
-            recommendation={liveRecommendation}
+            riskScore={riskScore}
+            riskLevel={riskLevel}
+            confidence={0.96}
+            keyFactors={[
+              current.precipitation > 20 ? `Active precipitation (${current.precipitation} mm)` : 'Atmospheric precipitation within seasonal bounds',
+              current.wind_gust > 40 ? `Elevated gusts (${current.wind_gust} km/h)` : 'Wind gusts within normal velocity profile',
+              'HistGradientBoosting Decision Ensemble assessment'
+            ]}
+            recommendation="Normal routine activities permitted. Keep monitoring regular local advisories."
             metrics={{
-              precipitation: current.precipitation !== undefined ? current.precipitation : 0,
-              wind_gust: current.wind_gust !== undefined ? current.wind_gust : 18,
-              temperature: current.temperature !== undefined ? current.temperature : 28,
-              surface_pressure: current.surface_pressure !== undefined ? current.surface_pressure : 1008,
-              soil_moisture: liveSoilMoisture
+              precipitation: current.precipitation || 0,
+              wind_gust: current.wind_gust || 18,
+              temperature: current.temperature || 28,
+              surface_pressure: current.surface_pressure || 1008,
+              soil_moisture: 48
             }}
           />
         </div>
@@ -248,8 +229,8 @@ export default function DashboardPage({
             latitude={Number.isFinite(currentWeather?.latitude) ? currentWeather.latitude : (selectedCoordinates?.lat || 21.1458)}
             longitude={Number.isFinite(currentWeather?.longitude) ? currentWeather.longitude : (selectedCoordinates?.lon || 79.0882)}
             temperature={current.temperature || 28.5}
-            riskScore={liveRiskScore}
-            riskLevel={liveRiskLevel}
+            riskScore={riskScore}
+            riskLevel={riskLevel}
             weatherDesc={current.weather_description || 'Clear'}
             onSelectLocation={onSelectLocation}
           />

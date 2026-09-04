@@ -36,12 +36,6 @@ class CurrentWeatherMetrics(BaseModel):
     timestamp: str
     precipitation_probability: Optional[float] = 0.0
     precipitation_intensity: Optional[str] = "No Rain"
-    risk_score: Optional[float] = 12.0
-    risk_level: Optional[str] = "LOW"
-    confidence: Optional[float] = 0.88
-    key_factors: Optional[List[str]] = Field(default_factory=list)
-    recommendation: Optional[str] = None
-    soil_moisture: Optional[float] = 42.0
 
 class WeatherCurrentResponse(BaseModel):
     location: str
@@ -51,11 +45,6 @@ class WeatherCurrentResponse(BaseModel):
     elevation_m: float
     data_source: str # "LIVE (Open-Meteo API)" or "DEMO/OFFLINE (Historical Observation)"
     current: CurrentWeatherMetrics
-    risk_score: Optional[float] = None
-    risk_level: Optional[str] = None
-    confidence: Optional[float] = None
-    key_factors: Optional[List[str]] = Field(default_factory=list)
-    recommendation: Optional[str] = None
 
 class DailyForecastItem(BaseModel):
     date: str
@@ -72,10 +61,6 @@ class DailyForecastItem(BaseModel):
     precipitation_probability_max: Optional[float] = 0.0
     precipitation_hours: Optional[float] = 0.0
     precipitation_category: Optional[str] = "No Rain"
-    confidence: Optional[float] = 0.88
-    key_factors: Optional[List[str]] = Field(default_factory=list)
-    recommendation: Optional[str] = None
-    soil_moisture: Optional[float] = 42.0
 
 class WeatherForecastResponse(BaseModel):
     location: str

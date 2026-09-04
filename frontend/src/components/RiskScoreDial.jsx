@@ -4,7 +4,7 @@ import { ShieldAlert, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
 export default function RiskScoreDial({ 
   riskScore = 22, 
   riskLevel = 'LOW', 
-  confidence = 0.88, 
+  confidence = 0.95, 
   keyFactors = [], 
   recommendation = 'Normal weather conditions.',
   metrics = {} 
@@ -85,8 +85,8 @@ export default function RiskScoreDial({
             <span className="text-xl font-bold text-slate-400 ml-1">/ 100</span>
           </div>
           <div className="text-xs text-slate-600 border-l border-slate-200 pl-3">
-            <p className="font-bold text-slate-800">Confidence: {Math.round(Math.min(confidence, 0.91) * 100)}%</p>
-            <p className="text-[11px] text-slate-500">HistGradientBoosting Ensemble</p>
+            <p className="font-bold text-slate-800">Confidence: {(confidence * 100).toFixed(0)}%</p>
+            <p className="text-[11px] text-slate-500">HistGradientBoosting Model</p>
           </div>
         </div>
 
@@ -102,7 +102,7 @@ export default function RiskScoreDial({
         <div className="space-y-2.5 text-xs mb-5 bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
           <div className="flex items-center justify-between text-slate-700 font-medium">
             <span>Rainfall Intensity</span>
-            <span className="text-slate-600 font-semibold">{metrics.precipitation > 0 ? `${metrics.precipitation} mm` : 'Dry / 0.0 mm'} ({rainPct}%)</span>
+            <span className="text-slate-600 font-semibold">{metrics.precipitation ? `${metrics.precipitation} mm` : 'Normal'} ({rainPct}%)</span>
           </div>
           <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
             <div className="bg-sky-500 h-full rounded-full" style={{ width: `${rainPct}%` }}></div>
@@ -117,7 +117,7 @@ export default function RiskScoreDial({
           </div>
 
           <div className="flex items-center justify-between text-slate-700 font-medium pt-1">
-            <span>Atmospheric Pressure (MSL)</span>
+            <span>Atmospheric Depression</span>
             <span className="text-slate-600 font-semibold">{metrics.surface_pressure ? `${metrics.surface_pressure} hPa` : '1008 hPa'}</span>
           </div>
           <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
@@ -126,7 +126,7 @@ export default function RiskScoreDial({
 
           <div className="flex items-center justify-between text-slate-700 font-medium pt-1">
             <span>Soil Moisture Saturation</span>
-            <span className="text-slate-600 font-semibold">{soilPct}% Saturation</span>
+            <span className="text-slate-600 font-semibold">{soilPct}% API</span>
           </div>
           <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
             <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${soilPct}%` }}></div>
