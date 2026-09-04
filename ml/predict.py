@@ -85,10 +85,11 @@ def calibrate_probabilities_and_confidence(raw_probs: np.ndarray, pred_score: fl
     
     return class_probs, calibrated_confidence
 
-def _physics_risk_fallback(weather_data: Dict[str, Any]) -> Dict[str, Any]:
+def compute_physical_hazard_score(weather_data: Dict[str, Any]) -> float:
     """
-    Robust physics-based risk calculation used when ML model cannot be loaded
-    or encounters runtime inference errors.
+    Computes a physics-constrained meteorological hazard floor score (0-100)
+    evaluating WMO convective storm codes, IMD precipitation intensities,
+    gale wind gusts, barometric pressure depressions, and thermal extremes.
     """
     rain_1d = float(weather_data.get("rainfall_1d", weather_data.get("precipitation", 0.0)))
     rain_3d = float(weather_data.get("rainfall_3d", rain_1d * 1.5))
@@ -99,54 +100,71 @@ def _physics_risk_fallback(weather_data: Dict[str, Any]) -> Dict[str, Any]:
     soil_moisture = float(weather_data.get("soil_moisture", 45.0))
     weather_code = int(weather_data.get("weather_code", 0))
 
-    # Base score
-    score = 8.0
+    hazard = 6.0
 
-    # WMO Active Convective / Severe Atmospheric Hazard
-    if weather_code in (95, 96, 99):
-        score += 30.0
+    # 1. WMO Active Convective / Severe Atmospheric Hazard
+    if weather_code in (96, 99):
+        # Thunderstorm with hail -> severe direct threat
+        hazard = max(hazard, 55.0)
+    elif weather_code == 95:
+        # Severe thunderstorm with lightning
+        hazard = max(hazard, 40.0)
     elif weather_code == 82:
-        score += 24.0
-    elif weather_code in (80, 81, 63, 65):
-        score += 15.0
+        # Violent rain shower
+        hazard = max(hazard, 44.0)
+    elif weather_code in (80, 81):
+        # Rain showers
+        hazard = max(hazard, 26.0)
+    elif weather_code in (71, 73, 75, 77):
+        # Snowfall / freezing precipitation
+        hazard = max(hazard, 36.0)
 
-    # Rain contribution
+    # 2. Precipitation Accumulation (IMD Scale)
     if rain_1d >= 115.0 or rain_3d >= 150.0:
-        score += 45.0
+        hazard = max(hazard, 72.0)
     elif rain_1d >= 64.5 or rain_3d >= 90.0:
-        score += 30.0
+        hazard = max(hazard, 52.0)
     elif rain_1d >= 35.6 or rain_3d >= 50.0:
-        score += 20.0
+        hazard = max(hazard, 36.0)
     elif rain_1d >= 15.0:
-        score += 10.0
+        hazard = max(hazard, 25.0)
     elif rain_1d >= 2.5:
-        score += 4.0
+        hazard = max(hazard, 12.0)
 
-    # Wind contribution
+    # 3. Wind Gusts
     if wind_gust >= 65.0:
-        score += 30.0
+        hazard = max(hazard, 58.0)
     elif wind_gust >= 45.0:
-        score += 18.0
-    elif wind_gust >= 30.0:
-        score += 8.0
+        hazard = max(hazard, 38.0)
+    elif wind_gust > 25.0:
+        hazard += (wind_gust - 25.0) * 0.5
 
-    # Pressure depression (cyclone/depression)
+    # 4. Barometric Pressure Depression
     if pressure < 985.0:
-        score += 25.0
+        hazard = max(hazard, 68.0)
     elif pressure < 998.0:
-        score += 12.0
+        hazard = max(hazard, 44.0)
+    elif pressure < 1004.0:
+        hazard += (1004.0 - pressure) * 1.2
 
-    # Temperature extremes
+    # 5. Temperature Stress (Heatwave / Coldwave)
     if t_max >= 44.0 or t_min <= 4.0:
-        score += 20.0
+        hazard = max(hazard, 52.0)
     elif t_max >= 40.0 or t_min <= 7.0:
-        score += 10.0
+        hazard = max(hazard, 32.0)
 
-    # Soil moisture saturation
+    # 6. Hydrological Soil Saturation
     if soil_moisture >= 80.0 and rain_1d >= 10.0:
-        score += 15.0
+        hazard += 10.0
 
-    score = float(np.clip(round(score, 1), 0.0, 100.0))
+    return float(np.clip(round(hazard, 1), 0.0, 100.0))
+
+def _physics_risk_fallback(weather_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Robust physics-based risk calculation used when ML model cannot be loaded
+    or encounters runtime inference errors.
+    """
+    score = compute_physical_hazard_score(weather_data)
 
     if score >= 70.0:
         pred_level = 3
@@ -282,22 +300,46 @@ def predict_weather_risk(weather_data: Dict[str, Any]) -> Dict[str, Any]:
         df_in = pd.DataFrame([row])[features]
         
         # Run predictions
-        pred_level = int(clf.predict(df_in)[0])
-        pred_probs = clf.predict_proba(df_in)[0]
-        pred_score = float(np.round(reg.predict(df_in)[0], 1))
-        
-        # Calibrated realistic meteorological confidence & smoothed class probabilities
-        class_probs, confidence = calibrate_probabilities_and_confidence(pred_probs, pred_score)
-        
-        level_label = RISK_LEVEL_LABELS.get(pred_level, "LOW")
+        ml_level = int(clf.predict(df_in)[0])
+        ml_probs = clf.predict_proba(df_in)[0]
+        ml_score = float(np.round(reg.predict(df_in)[0], 1))
+
+        # Ground with physics-constrained hazard floor
+        phys_score = compute_physical_hazard_score(weather_data)
+        fused_score = float(np.clip(max(ml_score, phys_score), 0.0, 100.0))
+        fused_score = round(fused_score, 1)
+
+        # Derive fused risk level
+        if fused_score >= 70.0:
+            fused_level = 3
+        elif fused_score >= 45.0:
+            fused_level = 2
+        elif fused_score >= 25.0:
+            fused_level = 1
+        else:
+            fused_level = 0
+
+        # If physics elevated the level above ML classification, adjust class probabilities
+        if fused_level != ml_level:
+            adjusted_probs = np.full(4, 0.05)
+            adjusted_probs[fused_level] = 0.85
+            rem = (1.0 - 0.85) / 3.0
+            for idx in range(4):
+                if idx != fused_level:
+                    adjusted_probs[idx] = rem
+            class_probs, confidence = calibrate_probabilities_and_confidence(adjusted_probs, fused_score)
+        else:
+            class_probs, confidence = calibrate_probabilities_and_confidence(ml_probs, fused_score)
+
+        level_label = RISK_LEVEL_LABELS.get(fused_level, "LOW")
         key_factors = extract_explainable_factors(weather_data)
-        recommendation = RISK_RECOMMENDATIONS.get(pred_level, RISK_RECOMMENDATIONS[0])
-        
+        recommendation = RISK_RECOMMENDATIONS.get(fused_level, RISK_RECOMMENDATIONS[0])
+
         return {
             "location": weather_data.get("location", weather_data.get("district", "Nagpur")),
-            "risk_score": pred_score,
+            "risk_score": fused_score,
             "risk_level": level_label,
-            "risk_level_code": pred_level,
+            "risk_level_code": fused_level,
             "confidence": confidence,
             "class_probabilities": class_probs,
             "key_factors": key_factors,

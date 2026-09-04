@@ -12,6 +12,7 @@ Delivers genuine, crop-specific, stage-aware agro-meteorological advisories base
 import re
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Tuple
+import numpy as np
 from models.schemas import FarmerAdvisoryRequest, FarmerAdvisoryResponse
 from services.weather_service import get_current_weather, get_forecast, compute_calibrated_rain_probability
 
@@ -174,6 +175,339 @@ def get_current_agricultural_season(month: Optional[int] = None) -> Tuple[str, s
             ["Wheat", "Mustard", "Rice", "Cotton"]
         )
 
+def compute_continuous_crop_suitability(
+    crop_name: str,
+    stage: str,
+    crop_profile: Dict[str, Any],
+    max_temp_ahead: float,
+    min_temp_ahead: float,
+    three_day_rain: float,
+    max_wind_ahead: float,
+    has_thunderstorm: bool,
+    curr_rh: float,
+    soil_moisture: float = 45.0
+) -> Tuple[float, str, List[Tuple[str, str]]]:
+    """
+    Computes a continuous multi-factor agronomic suitability score (0 to 100)
+    combining thermal departure, stage-specific moisture, soil trafficability,
+    wind lodging risk, and convective storm hazards.
+    
+    Returns:
+    (suitability_score, status, factor_tuples)
+    """
+    opt_min, opt_max = crop_profile["optimal_temp_range"]
+    t_crit = crop_profile.get("critical_heat_threshold", 40.0)
+    t_frost = crop_profile.get("frost_threshold", 5.0)
+    mean_temp = (max_temp_ahead + min_temp_ahead) / 2.0
+    is_tall_crop = crop_name in ["Sugarcane", "Maize", "Wheat", "Mustard", "Cotton"]
+
+    factor_explanations: List[Tuple[str, str]] = []
+
+    # 1. Thermal Comfort Score (0 - 100)
+    if opt_min <= mean_temp <= opt_max:
+        center = (opt_min + opt_max) / 2.0
+        span = max(1.0, (opt_max - opt_min) / 2.0)
+        s_thermal = 95.0 + 5.0 * (1.0 - abs(mean_temp - center) / span)
+        factor_explanations.append((
+            f"Temperature regime ({min_temp_ahead:.1f}°C - {max_temp_ahead:.1f}°C) is favorable for {crop_name}.",
+            f"तापमान सीमा ({min_temp_ahead:.1f}°C - {max_temp_ahead:.1f}°C) {crop_name} की वृद्धि के लिए अनुकूल है।"
+        ))
+    elif mean_temp > opt_max:
+        if mean_temp >= t_crit:
+            s_thermal = max(15.0, 50.0 - (mean_temp - t_crit) * 8.0)
+            factor_explanations.append((
+                f"Peak daytime temperature ({max_temp_ahead:.1f}°C) exceeds tolerance threshold ({t_crit:.1f}°C).",
+                f"अधिकतम तापमान ({max_temp_ahead:.1f}°C) फसल की सुरक्षित सीमा ({t_crit:.1f}°C) से अधिक है।"
+            ))
+        else:
+            fraction = (mean_temp - opt_max) / max(1.0, t_crit - opt_max)
+            s_thermal = max(45.0, 95.0 - 45.0 * fraction)
+            factor_explanations.append((
+                f"Temperature ({max_temp_ahead:.1f}°C) is slightly above optimal but manageable.",
+                f"तापमान ({max_temp_ahead:.1f}°C) सामान्य से थोड़ा अधिक है परंतु सहनीय है।"
+            ))
+    else:  # mean_temp < opt_min
+        if mean_temp <= t_frost:
+            s_thermal = max(15.0, 50.0 - (t_frost - mean_temp) * 8.0)
+            factor_explanations.append((
+                f"Low night temperature ({min_temp_ahead:.1f}°C) triggers chill/frost injury hazard.",
+                f"न्यूनतम तापमान ({min_temp_ahead:.1f}°C) पाला / शीत लहर का जोखिम पैदा करता है।"
+            ))
+        else:
+            fraction = (opt_min - mean_temp) / max(1.0, opt_min - t_frost)
+            s_thermal = max(45.0, 95.0 - 45.0 * fraction)
+            factor_explanations.append((
+                f"Night temperatures ({min_temp_ahead:.1f}°C) are cooler than optimal.",
+                f"रात्रि का तापमान ({min_temp_ahead:.1f}°C) फसल के लिए सामान्य से ठंडा है।"
+            ))
+
+    # 2. Stage-Specific Moisture / Rainfall Score (0 - 100)
+    R = three_day_rain
+    if stage == "Harvesting":
+        if R <= 1.0:
+            s_rain = 98.0 - R * 4.0
+            factor_explanations.append((
+                "Continuous dry weather and ample sunshine provide an optimal window for harvest and safe dispatch.",
+                "शुष्क मौसम और खिली धूप कटाई और गहाई (Threshing) के लिए सर्वोत्तम अवसर प्रदान कर रहे हैं।"
+            ))
+        elif R <= 6.0:
+            s_rain = max(45.0, 94.0 - (R - 1.0) * 8.5)
+            factor_explanations.append((
+                f"Moderate precipitation ({R:.1f} mm) delays grain sun-drying and machinery movement.",
+                f"हल्की-मध्यम वर्षा ({R:.1f} मिमी) कटाई व धूप में सुखाने के कार्य को धीमा करेगी।"
+            ))
+        else:
+            s_rain = max(12.0, 48.0 - (R - 6.0) * 1.5)
+            if crop_name == "Sugarcane":
+                factor_explanations.append((
+                    f"Heavy imminent rain ({R:.1f} mm) causes severe tractor-trolley wheel rutting and rapid sucrose inversion in cut cane.",
+                    f"आगामी 72 घंटों में भारी वर्षा ({R:.1f} मिमी) से खेत में कीचड़, ट्रैक्टर पहिये धंसने व कटे गन्ने में सुक्रोस ह्रास (Sucrose Inversion) का गंभीर खतरा है।"
+                ))
+            elif crop_name == "Rice":
+                factor_explanations.append((
+                    f"Precipitation ({R:.1f} mm) waterlogs paddy fields, bogs combines, and causes premature grain sprouting.",
+                    f"बारिश ({R:.1f} मिमी) से धान के खेतों में पानी भरेगा, कंबाइन चलना असंभव होगा व कटी बालियों में अंकुरण का खतरा है।"
+                ))
+            else:
+                factor_explanations.append((
+                    f"Heavy imminent rainfall ({R:.1f} mm) threatens grain discolouration, fungal mold, and combine stoppages.",
+                    f"आगामी वर्षा ({R:.1f} मिमी) से कटी फसल भीगने, दाने काले पड़ने व फफूंद लगने का खतरा है।"
+                ))
+
+    elif stage in ["Sowing", "Planting"]:
+        if crop_name == "Rice":
+            if 12.0 <= R <= 45.0:
+                s_rain = 95.0
+                factor_explanations.append((
+                    f"Upcoming rainfall ({R:.1f} mm) is beneficial for field puddling (Leha/Machan) for transplanting.",
+                    f"आगामी वर्षा ({R:.1f} मिमी) रोपाई हेतु खेत में लेवा/कीचड़ (Puddling) तैयारी के लिए अत्यधिक उपयोगी है।"
+                ))
+            elif R < 12.0:
+                s_rain = 76.0 + R * 1.4
+                factor_explanations.append((
+                    "Warm temperature regime supports rapid paddy nursery seedling emergence.",
+                    "गर्म तापमान और अनुकूल परिस्थितियां धान की नर्सरी तैयार करने के लिए उपयुक्त हैं।"
+                ))
+            else:
+                s_rain = max(35.0, 95.0 - (R - 45.0) * 1.2)
+                factor_explanations.append((
+                    f"Excessive rainfall ({R:.1f} mm) requires drainage control in paddy nursery beds.",
+                    f"अत्यधिक वर्षा ({R:.1f} मिमी) के कारण धान की नर्सरी क्यारियों में जल स्तर नियंत्रित रखना आवश्यक है।"
+                ))
+        else:
+            max_tol = crop_profile.get("max_tolerated_rain_sowing", 20.0)
+            if R <= 8.0:
+                s_rain = 94.0 if R >= 1.0 else 82.0
+                factor_explanations.append((
+                    "Favorable seedbed moisture and clear skies ensure vigorous seedling emergence.",
+                    "अनुकूल मृदा नमी और साफ मौसम बुवाई और अंकुरण के लिए उपयुक्त है।"
+                ))
+            elif R <= max_tol:
+                s_rain = max(45.0, 92.0 - (R - 8.0) * 3.5)
+                factor_explanations.append((
+                    f"Moderate showers ({R:.1f} mm) require waiting for topsoil to reach workable moisture (Vapsa).",
+                    f"मध्यम वर्षा ({R:.1f} मिमी) के कारण खेत सूखने (वतर आने) के बाद ही जुताई व बुवाई करें।"
+                ))
+            else:
+                s_rain = max(15.0, 48.0 - (R - max_tol) * 1.8)
+                factor_explanations.append((
+                    f"Excessive rainfall ({R:.1f} mm) causes seedbed crusting (Papri) and seed rot; postpone drilling until workable field capacity (Vapsa) returns.",
+                    f"अत्यधिक वर्षा ({R:.1f} मिमी) से मिट्टी की पपड़ी जमने (Crusting) और बीज सड़ने का खतरा है; बुवाई खेत में उचित नमी (वतर) आने तक स्थगित रखें।"
+                ))
+
+    elif stage == "Flowering":
+        if R <= 3.0 and curr_rh <= 80.0:
+            s_rain = 96.0
+            factor_explanations.append((
+                "Clear daylight promotes optimal insect pollination and healthy panicle emergence.",
+                "अनुकूल खिली धूप सक्रिय कीट परागण (Bee activity) के लिए उत्तम है।"
+            ))
+        elif R <= 15.0 and curr_rh <= 85.0:
+            s_rain = max(55.0, 94.0 - (R - 3.0) * 2.8)
+            factor_explanations.append((
+                "Beneficial soil moisture supports reproductive vigor and anthesis.",
+                "मध्यम नमी से परागण और दाना बनने की प्रक्रिया को प्राकृतिक सहारा मिलता है।"
+            ))
+        else:
+            s_rain = max(20.0, 55.0 - max(0.0, R - 15.0) * 1.5 - max(0.0, curr_rh - 85.0) * 1.0)
+            factor_explanations.append((
+                f"Rainfall ({R:.1f} mm) and high relative humidity ({curr_rh:.0f}%) threaten pollen wash and fungal flower blight.",
+                f"बारिश ({R:.1f} मिमी) व उच्च आर्द्रता ({curr_rh:.0f}%) से परागकण धुलने व फफूंद जनित रोगों का जोखिम है।"
+            ))
+
+    elif stage == "Maturity":
+        if R <= 4.0:
+            s_rain = 96.0
+            factor_explanations.append((
+                "Dry atmospheric conditions accelerate starch hardening and sucrose accumulation.",
+                "शुष्क वातावरण दानों के कड़े होने और शर्करा संचय (Brix) के लिए आदर्श है।"
+            ))
+        else:
+            s_rain = max(22.0, 94.0 - (R - 4.0) * 3.2)
+            factor_explanations.append((
+                f"Rainfall ({R:.1f} mm) on mature crop risks grain discolouration, lodging, and pre-harvest sprouting.",
+                f"पकती फसल पर वर्षा ({R:.1f} मिमी) दाना काला पड़ने और फसल गिरने का खतरा पैदा करती है।"
+            ))
+
+    else:  # Vegetative / Tillering
+        if crop_name == "Rice":
+            if 15.0 <= R <= 60.0:
+                s_rain = 96.0
+                factor_explanations.append((
+                    f"Rainfall ({R:.1f} mm) provides ideal standing water to promote vigorous paddy tillering.",
+                    f"वर्षा ({R:.1f} मिमी) धान के कल्ले फूटने (Tillering) के लिए आदर्श पानी उपलब्ध कराएगी।"
+                ))
+            elif R < 15.0:
+                s_rain = 84.0
+                factor_explanations.append((
+                    "Favorable vegetative development; maintain shallow standing water layer.",
+                    "वानस्पतिक बढ़वार के लिए सामान्य परिस्थितियां; खेत में 2-4 सेमी पानी बनाए रखें।"
+                ))
+            else:
+                s_rain = max(45.0, 95.0 - (R - 60.0) * 0.8)
+                factor_explanations.append((
+                    f"High rain volume ({R:.1f} mm) requires open drainage to prevent submergence injury.",
+                    f"अधिक वर्षा ({R:.1f} मिमी) से बचाव हेतु जल निकास नालियां खुली रखें।"
+                ))
+        else:
+            if R > 60.0:
+                s_rain = max(25.0, 58.0 - (R - 60.0) * 1.0)
+                factor_explanations.append((
+                    f"Severe rain accumulation ({R:.1f} mm) risks root zone saturation and nutrient leaching.",
+                    f"भारी वर्षा ({R:.1f} मिमी) से खेत में जलभराव और जड़ों के दम घुटने का खतरा है।"
+                ))
+            elif R >= 12.0:
+                s_rain = 95.0
+                factor_explanations.append((
+                    f"Rainfall ({R:.1f} mm) naturally recharges root zone moisture, saving scheduled irrigation costs.",
+                    f"वर्षा ({R:.1f} मिमी) फसल की पानी की जरूरत पूरी करेगी और सिंचाई की लागत बचाएगी।"
+                ))
+            else:
+                s_rain = 85.0
+                factor_explanations.append((
+                    "Vegetative canopy expansion proceeds normally under stable ambient conditions.",
+                    "वानस्पतिक वृद्धि के लिए मौसम सामान्य है; आवश्यकतानुसार हल्की सिंचाई करें।"
+                ))
+
+    # 3. Wind Lodging / Mechanical Stress Score (0 - 100)
+    if is_tall_crop:
+        if max_wind_ahead <= 20.0:
+            s_wind = 98.0
+            factor_explanations.append((
+                f"Wind speed ({max_wind_ahead:.1f} km/h) is calm and favorable for field operations.",
+                f"हवा की गति ({max_wind_ahead:.1f} किमी/घंटा) शांत व कृषि कार्यों के लिए सुरक्षित है।"
+            ))
+        elif max_wind_ahead <= 35.0:
+            s_wind = max(55.0, 98.0 - (max_wind_ahead - 20.0) * 2.5)
+            factor_explanations.append((
+                f"Brisk wind gusts ({max_wind_ahead:.1f} km/h) accelerate topsoil moisture evaporation.",
+                f"तेज हवाएं ({max_wind_ahead:.1f} किमी/घंटा) ऊपरी मिट्टी से नमी का वाष्पीकरण तेज करती हैं।"
+            ))
+        else:
+            s_wind = max(20.0, 55.0 - (max_wind_ahead - 35.0) * 2.2)
+            factor_explanations.append((
+                f"High wind gusts ({max_wind_ahead:.1f} km/h) risk mechanical lodging in tall standing {crop_name}.",
+                f"तेज हवा के झोंके ({max_wind_ahead:.1f} किमी/घंटा) खड़ी फसल में गिरने (Lodging) का जोखिम पैदा करते हैं।"
+            ))
+    else:
+        if max_wind_ahead <= 28.0:
+            s_wind = 98.0
+            factor_explanations.append((
+                f"Wind speed ({max_wind_ahead:.1f} km/h) is calm and favorable for field operations.",
+                f"हवा की गति ({max_wind_ahead:.1f} किमी/घंटा) शांत व कृषि कार्यों के लिए सुरक्षित है।"
+            ))
+        else:
+            s_wind = max(40.0, 98.0 - (max_wind_ahead - 28.0) * 2.0)
+            factor_explanations.append((
+                f"Gusty winds ({max_wind_ahead:.1f} km/h) may impact spraying and field operations.",
+                f"तेज हवाएं ({max_wind_ahead:.1f} किमी/घंटा) छिड़काव कार्य को प्रभावित कर सकती हैं।"
+            ))
+
+    # 4. Soil Moisture / Trafficability Score (0 - 100)
+    if stage == "Harvesting":
+        if soil_moisture <= 45.0:
+            s_soil = 96.0
+        elif soil_moisture <= 65.0:
+            s_soil = max(50.0, 96.0 - (soil_moisture - 45.0) * 2.0)
+        else:
+            s_soil = max(15.0, 50.0 - (soil_moisture - 65.0) * 2.2)
+    elif crop_name == "Rice":
+        if soil_moisture >= 55.0:
+            s_soil = 96.0
+        else:
+            s_soil = max(60.0, 70.0 + soil_moisture * 0.4)
+    elif crop_name in ["Pulses", "Cotton", "Potato"]:
+        if soil_moisture <= 65.0:
+            s_soil = 94.0
+        else:
+            s_soil = max(20.0, 94.0 - (soil_moisture - 65.0) * 3.0)
+    else:
+        if soil_moisture <= 75.0:
+            s_soil = 92.0
+        else:
+            s_soil = max(35.0, 92.0 - (soil_moisture - 75.0) * 2.5)
+
+    # 5. Severe Weather / Storm Penalty
+    storm_penalty = 0.0
+    if has_thunderstorm:
+        if stage in ["Maturity", "Harvesting"]:
+            storm_penalty = 18.0
+            factor_explanations.append((
+                "Thunderstorm activity and wind gusts risk stalk lodging and grain shattering.",
+                "गरज-चमक व आंधी से खड़ी फसल गिरने व दाना झड़ने का गंभीर खतरा है।"
+            ))
+        elif stage == "Flowering":
+            storm_penalty = 14.0
+            factor_explanations.append((
+                "Thunderstorm activity risks pollen wash and floral abortion in active bloom.",
+                "गरज-चमक की गतिविधियों से नाजुक फूलों के झड़ने व परागण बाधित होने की आशंका है।"
+            ))
+        elif stage in ["Sowing", "Planting"]:
+            storm_penalty = 10.0
+            factor_explanations.append((
+                "Thunderstorm downpours risk soil crusting and seed displacement in newly prepared seedbeds.",
+                "गरज-चमक व तेज बौछारों से नई बोई क्यारियों में मिट्टी की पपड़ी जमने (Crusting) का जोखिम है।"
+            ))
+        else:
+            storm_penalty = 6.0
+            factor_explanations.append((
+                "Thunderstorm squalls require vigilance; maintain clear field runoff drains.",
+                "गरज-चमक की गतिविधियों के दौरान खेत में जल निकास नालियां खुली रखें।"
+            ))
+
+    # Stage-Specific Weights
+    if stage == "Harvesting":
+        w_rain, w_soil, w_thermal, w_wind = 0.48, 0.24, 0.16, 0.12
+    elif stage in ["Sowing", "Planting"]:
+        w_rain, w_thermal, w_soil, w_wind = 0.38, 0.34, 0.16, 0.12
+    elif stage == "Flowering":
+        w_rain, w_thermal, w_wind, w_soil = 0.35, 0.38, 0.15, 0.12
+    elif stage == "Maturity":
+        w_rain, w_thermal, w_wind, w_soil = 0.42, 0.26, 0.18, 0.14
+    else:  # Vegetative
+        w_rain, w_thermal, w_soil, w_wind = 0.35, 0.40, 0.15, 0.10
+
+    raw_score = (
+        w_rain * s_rain +
+        w_thermal * s_thermal +
+        w_soil * s_soil +
+        w_wind * s_wind -
+        storm_penalty
+    )
+
+    final_score = float(np.clip(round(raw_score, 1), 15.0, 98.0))
+
+    if final_score >= 80.0:
+        status = "OPTIMAL"
+    elif final_score >= 65.0:
+        status = "FAVORABLE"
+    elif final_score >= 45.0:
+        status = "CAUTION"
+    else:
+        status = "UNFAVORABLE"
+
+    return final_score, status, factor_explanations
+
 def generate_farmer_advisory(req: FarmerAdvisoryRequest) -> FarmerAdvisoryResponse:
     """
     Combines live NWP physics, crop biology, stage sensitivity, and soil trafficability
@@ -211,7 +545,25 @@ def generate_farmer_advisory(req: FarmerAdvisoryRequest) -> FarmerAdvisoryRespon
     is_in_season = (season_code in allowed_seasons) or ("PERENNIAL" in allowed_seasons)
 
     if not is_in_season:
-        suitability_score = 18.0
+        # Dynamic Continuous Off-Season Suitability Modeling
+        # Evaluates physical thermal departure and moisture excess rather than a static constant
+        opt_min, opt_max = crop_profile["optimal_temp_range"]
+        mean_temp_ahead = (max_temp_ahead + min_temp_ahead) / 2.0
+
+        # Thermal departure from species biological comfort envelope
+        if mean_temp_ahead > opt_max:
+            temp_penalty = (mean_temp_ahead - opt_max) * 1.8
+        elif mean_temp_ahead < opt_min:
+            temp_penalty = (opt_min - mean_temp_ahead) * 1.8
+        else:
+            temp_penalty = 0.0
+
+        # Off-season precipitation penalty (e.g. monsoon moisture rotting winter crops)
+        rain_penalty = min(three_day_rain * 0.75, 14.0)
+        storm_penalty = 6.0 if has_thunderstorm else 0.0
+
+        raw_off_score = 38.0 - temp_penalty - rain_penalty - storm_penalty
+        suitability_score = float(max(min(round(raw_off_score, 1), 42.0), 12.0))
         status = "UNFAVORABLE"
         in_season_list_str = ", ".join(in_season_crops)
         season_warning = (
@@ -243,11 +595,11 @@ def generate_farmer_advisory(req: FarmerAdvisoryRequest) -> FarmerAdvisoryRespon
             )
         ]
         recommendation = (
-            f"For {crop_name} in {clean_location}: Current weather suitability is UNFAVORABLE (18/100) due to seasonal mismatch. "
+            f"For {crop_name} in {clean_location}: Current weather suitability is UNFAVORABLE ({suitability_score:.0f}/100) due to seasonal mismatch. "
             f"You are currently in the {season_name_en}. In one season, one crop type matching the climate will grow. "
             f"Favorable crops for this season are {in_season_list_str}. Postpone {crop_name} operations until its proper season begins."
             if not is_hi else
-            f"{clean_location} में {crop_hi} के लिए: मौसम उपयुक्तता अनुपयुक्त (18/100) है क्योंकि यह {crop_hi} का मौसम नहीं है। "
+            f"{clean_location} में {crop_hi} के लिए: मौसम उपयुक्तता अनुपयुक्त ({suitability_score:.0f}/100) है क्योंकि यह {crop_hi} का मौसम नहीं है। "
             f"वर्तमान में {season_name_hi} सक्रिय है। एक मौसम में उसी ऋतु की फसल ही सफल होती है। "
             f"इस मौसम के लिए उपयुक्त फसलें {in_season_list_str} हैं। {crop_hi} की बुवाई सही ऋतु आने पर ही करें।"
         )
@@ -304,7 +656,22 @@ def generate_farmer_advisory(req: FarmerAdvisoryRequest) -> FarmerAdvisoryRespon
         default=5.0
     )
 
-    score = 90.0
+    soil_moisture = float(getattr(current.current, 'soil_moisture', 45.0))
+
+    # Evaluate continuous multi-factor agronomic suitability engine
+    suitability_score, status, factor_tuples = compute_continuous_crop_suitability(
+        crop_name=crop_name,
+        stage=stage,
+        crop_profile=crop_profile,
+        max_temp_ahead=max_temp_ahead,
+        min_temp_ahead=min_temp_ahead,
+        three_day_rain=three_day_rain,
+        max_wind_ahead=max_wind_ahead,
+        has_thunderstorm=has_thunderstorm,
+        curr_rh=curr_rh,
+        soil_moisture=soil_moisture
+    )
+
     why_factors: List[str] = [
         (
             f"In-Season Crop: {crop_name} is actively aligned with the current {season_name_en}."
@@ -313,230 +680,8 @@ def generate_farmer_advisory(req: FarmerAdvisoryRequest) -> FarmerAdvisoryRespon
         )
     ]
 
-    # Thermal checks
-    opt_min, opt_max = crop_profile["optimal_temp_range"]
-    if max_temp_ahead > crop_profile["critical_heat_threshold"]:
-        heat_diff = max_temp_ahead - crop_profile["critical_heat_threshold"]
-        penalty = min(heat_diff * 4.5, 30.0)
-        score -= penalty
-        if is_hi:
-            why_factors.append(f"अधिकतम तापमान ({max_temp_ahead:.1f}°C) फसल के लिए सुरक्षित सीमा ({crop_profile['critical_heat_threshold']}°C) से अधिक है।")
-        else:
-            why_factors.append(f"Peak daytime temperature ({max_temp_ahead:.1f}°C) exceeds tolerance threshold ({crop_profile['critical_heat_threshold']}°C).")
-    elif min_temp_ahead < crop_profile["frost_threshold"]:
-        frost_diff = crop_profile["frost_threshold"] - min_temp_ahead
-        score -= min(frost_diff * 5.0, 25.0)
-        if is_hi:
-            why_factors.append(f"न्यूनतम तापमान ({min_temp_ahead:.1f}°C) पाला / शीत लहर का जोखिम पैदा करता है।")
-        else:
-            why_factors.append(f"Low night temperature ({min_temp_ahead:.1f}°C) triggers chill/frost injury hazard.")
-    else:
-        if is_hi:
-            why_factors.append(f"तापमान सीमा ({min_temp_ahead:.1f}°C - {max_temp_ahead:.1f}°C) {crop_hi} की वृद्धि के लिए अनुकूल है।")
-        else:
-            why_factors.append(f"Temperature regime ({min_temp_ahead:.1f}°C - {max_temp_ahead:.1f}°C) is favorable for {crop_name}.")
-
-    # Wind and severe weather checks (CROP & STAGE AWARE)
-    is_tall_crop = crop_name in ["Sugarcane", "Maize", "Wheat", "Mustard", "Cotton"]
-    if has_thunderstorm:
-        if stage in ["Sowing", "Planting"]:
-            score -= 12.0
-            if crop_name == "Rice":
-                if is_hi:
-                    why_factors.append(f"गरज-चमक व तेज बौछारों से नर्सरी क्यारियों में बीज बहने का खतरा है (हवा की गति {max_wind_ahead:.1f} किमी/घंटा सामान्य है)।")
-                else:
-                    why_factors.append(f"Thunderstorm showers risk washing away sprouted seeds in nursery beds (wind {max_wind_ahead:.1f} km/h is manageable).")
-            else:
-                if is_hi:
-                    why_factors.append(f"गरज-चमक व तेज बौछारों से नई बोई क्यारियों में मिट्टी की पपड़ी जमने (Crusting) का जोखिम है।")
-                else:
-                    why_factors.append(f"Thunderstorm downpours risk soil crusting and seed displacement in newly prepared seedbeds.")
-        elif stage == "Flowering":
-            score -= 15.0
-            if is_hi:
-                why_factors.append(f"गरज-चमक की गतिविधियों से नाजुक फूलों के झड़ने व परागण बाधित होने की आशंका है।")
-            else:
-                why_factors.append(f"Thunderstorm activity risks pollen wash and floral abortion in active bloom.")
-        elif stage in ["Maturity", "Harvesting"]:
-            if max_wind_ahead >= 28.0 and is_tall_crop:
-                score -= 20.0
-                if is_hi:
-                    why_factors.append(f"गरज-चमक व तेज आंधी ({max_wind_ahead:.1f} किमी/घंटा) से खड़े {crop_hi} के गिरने (Lodging) का जोखिम है।")
-                else:
-                    why_factors.append(f"Thunderstorm activity and strong wind gusts ({max_wind_ahead:.1f} km/h) risk stalk lodging in standing {crop_name}.")
-            else:
-                score -= 10.0
-                if is_hi:
-                    why_factors.append(f"गरज-चमक व बारिश से पकी फसल भीगने का खतरा है (हवा की गति {max_wind_ahead:.1f} किमी/घंटा सामान्य है)।")
-                else:
-                    why_factors.append(f"Thunderstorm precipitation threatens mature crop wetting (wind {max_wind_ahead:.1f} km/h is manageable).")
-        else:  # Vegetative
-            score -= 6.0
-            if is_hi:
-                why_factors.append(f"गरज-चमक व वर्षा से वानस्पतिक वृद्धि को सहारा मिलेगा; खेत में जल निकास खुला रखें।")
-            else:
-                why_factors.append(f"Thunderstorm showers replenish vegetative root zone; maintain field drainage.")
-    elif max_wind_ahead >= 30.0:
-        score -= 12.0
-        if stage in ["Maturity", "Harvesting", "Flowering"] and is_tall_crop:
-            if is_hi:
-                why_factors.append(f"तेज हवा के झोंके ({max_wind_ahead:.1f} किमी/घंटा) खड़ी फसल में गिरने (Lodging) का जोखिम पैदा करते हैं।")
-            else:
-                why_factors.append(f"High wind gusts ({max_wind_ahead:.1f} km/h) risk mechanical lodging in tall standing {crop_name}.")
-        else:
-            if is_hi:
-                why_factors.append(f"तेज हवाएं ({max_wind_ahead:.1f} किमी/घंटा) ऊपरी मिट्टी से नमी का वाष्पीकरण तेज करती हैं।")
-            else:
-                why_factors.append(f"Brisk wind gusts ({max_wind_ahead:.1f} km/h) accelerate topsoil moisture evaporation.")
-    else:
-        if is_hi:
-            why_factors.append(f"हवा की गति ({max_wind_ahead:.1f} किमी/घंटा) शांत व कृषि कार्यों के लिए सुरक्षित है।")
-        else:
-            why_factors.append(f"Wind speed ({max_wind_ahead:.1f} km/h) is calm and favorable for field operations.")
-
-    # STAGE-SPECIFIC RAINFALL SENSITIVITY & CONTRIBUTING FACTORS
-    if stage in ["Harvesting"]:
-        if three_day_rain >= 12.0 or (has_thunderstorm and three_day_rain >= 6.0):
-            score -= 62.0
-            if crop_name == "Sugarcane":
-                if is_hi:
-                    why_factors.append(f"आगामी 72 घंटों में भारी वर्षा ({three_day_rain:.1f} मिमी) से खेत में कीचड़, ट्रैक्टर पहिये धंसने व कटे गन्ने में सुक्रोस ह्रास (Sucrose Inversion) का गंभीर खतरा है।")
-                else:
-                    why_factors.append(f"Heavy imminent rain ({three_day_rain:.1f} mm) causes severe tractor-trolley wheel rutting and rapid sucrose inversion in cut cane.")
-            elif crop_name == "Rice":
-                if is_hi:
-                    why_factors.append(f"बारिश ({three_day_rain:.1f} मिमी) से धान के खेतों में पानी भरेगा, कंबाइन चलना असंभव होगा व कटी बालियों में अंकुरण का खतरा है।")
-                else:
-                    why_factors.append(f"Precipitation ({three_day_rain:.1f} mm) waterlogs paddy fields, bogs combines, and causes premature grain sprouting.")
-            else:
-                if is_hi:
-                    why_factors.append(f"आगामी वर्षा ({three_day_rain:.1f} मिमी) से कटी फसल भीगने, दाने काले पड़ने व फफूंद लगने का खतरा है।")
-                else:
-                    why_factors.append(f"Heavy imminent rainfall ({three_day_rain:.1f} mm) threatens grain discolouration, fungal mold, and combine stoppages.")
-        elif three_day_rain >= 4.0:
-            score -= 32.0
-            if is_hi:
-                why_factors.append(f"हल्की-मध्यम वर्षा ({three_day_rain:.1f} मिमी) कटाई व धूप में सुखाने के कार्य को धीमा करेगी।")
-            else:
-                why_factors.append(f"Moderate precipitation ({three_day_rain:.1f} mm) delays grain sun-drying and machinery movement.")
-        else:
-            score += 5.0
-            if is_hi:
-                why_factors.append("शुष्क मौसम और खिली धूप कटाई और गहाई (Threshing) के लिए सर्वोत्तम अवसर प्रदान कर रहे हैं।")
-            else:
-                why_factors.append("Continuous dry weather and ample sunshine provide an optimal window for harvest and safe dispatch.")
-
-    elif stage in ["Sowing", "Planting"]:
-        if crop_name == "Rice":
-            if three_day_rain >= 15.0:
-                score -= 12.0
-                if is_hi:
-                    why_factors.append(f"आगामी वर्षा ({three_day_rain:.1f} मिमी) रोपाई हेतु खेत में लेवा/कीचड़ (Puddling) तैयारी के लिए अत्यधिक उपयोगी है, हालांकि नर्सरी में जल स्तर 2-3 सेमी पर नियंत्रित रखना होगा।")
-                else:
-                    why_factors.append(f"Upcoming rainfall ({three_day_rain:.1f} mm) is beneficial for field puddling (Leha/Machan) for transplanting, though nursery bed water levels must be regulated to avoid seed drift.")
-            else:
-                score += 4.0
-                if is_hi:
-                    why_factors.append("गर्म तापमान और अनुकूल परिस्थितियां धान की नर्सरी तैयार करने के लिए उपयुक्त हैं।")
-                else:
-                    why_factors.append("Warm temperature regime supports rapid paddy nursery seedling emergence.")
-        else:
-            # Upland Crops (Wheat, Sugarcane, Maize, Pulses, Mustard, Cotton, Potato)
-            if three_day_rain > crop_profile["max_tolerated_rain_sowing"]:
-                score -= 52.0
-                if is_hi:
-                    why_factors.append(f"अत्यधिक वर्षा ({three_day_rain:.1f} मिमी) से मिट्टी की पपड़ी जमने (Crusting) और बीज सड़ने का खतरा है; बुवाई खेत में उचित नमी (वतर) आने तक स्थगित रखें।")
-                else:
-                    why_factors.append(f"Excessive rainfall ({three_day_rain:.1f} mm) causes seedbed crusting (Papri) and seed rot in aerobic seedbeds; postpone drilling until workable field capacity (Vapsa) returns.")
-            elif three_day_rain >= 8.0:
-                score -= 22.0
-                if is_hi:
-                    why_factors.append(f"मध्यम वर्षा ({three_day_rain:.1f} मिमी) के कारण खेत सूखने (वतर आने) के बाद ही जुताई व बुवाई करें।")
-                else:
-                    why_factors.append(f"Moderate showers ({three_day_rain:.1f} mm) require waiting for topsoil to reach workable moisture (Vapsa).")
-            else:
-                score += 4.0
-                if is_hi:
-                    why_factors.append("अनुकूल मृदा नमी और साफ मौसम बुवाई और अंकुरण के लिए उपयुक्त है।")
-                else:
-                    why_factors.append("Favorable seedbed moisture and clear skies ensure vigorous seedling emergence.")
-
-    elif stage in ["Flowering"]:
-        if three_day_rain >= 20.0 or curr_rh > 85.0:
-            score -= 32.0
-            if is_hi:
-                why_factors.append(f"बारिश ({three_day_rain:.1f} मिमी) व उच्च आर्द्रता ({curr_rh}%) से परागकण धुलने व फफूंद जनित रोगों का जोखिम है।")
-            else:
-                why_factors.append(f"Rainfall ({three_day_rain:.1f} mm) and high relative humidity ({curr_rh}%) threaten pollen wash and fungal flower blight.")
-        elif three_day_rain >= 5.0:
-            score += 2.0
-            if is_hi:
-                why_factors.append("मध्यम नमी से परागण और दाना बनने की प्रक्रिया को प्राकृतिक सहारा मिलता है।")
-            else:
-                why_factors.append("Beneficial soil moisture supports reproductive vigor and anthesis.")
-        else:
-            if is_hi:
-                why_factors.append("अनुकूल खिली धूप सक्रिय कीट परागण (Bee activity) के लिए उत्तम है।")
-            else:
-                why_factors.append("Clear daylight promotes optimal insect pollination and healthy panicle emergence.")
-
-    elif stage in ["Maturity"]:
-        if three_day_rain >= 15.0:
-            score -= 42.0
-            if is_hi:
-                why_factors.append(f"पकती फसल पर वर्षा ({three_day_rain:.1f} मिमी) दाना काला पड़ने और फसल गिरने का खतरा पैदा करती है।")
-            else:
-                why_factors.append(f"Rainfall ({three_day_rain:.1f} mm) on mature crop risks grain discolouration, lodging, and pre-harvest sprouting.")
-        else:
-            if is_hi:
-                why_factors.append("शुष्क वातावरण दानों के कड़े होने और शर्करा संचय (Brix) के लिए आदर्श है।")
-            else:
-                why_factors.append("Dry atmospheric conditions accelerate starch hardening and sucrose accumulation.")
-
-    else:  # Vegetative / Tillering
-        if crop_name == "Rice":
-            if three_day_rain >= 15.0:
-                score += 5.0
-                if is_hi:
-                    why_factors.append(f"वर्षा ({three_day_rain:.1f} मिमी) धान के कल्ले फूटने (Tillering) के लिए आदर्श 3-5 सेमी पानी उपलब्ध कराएगी।")
-                else:
-                    why_factors.append(f"Rainfall ({three_day_rain:.1f} mm) provides ideal 3-5 cm standing water to promote vigorous paddy tillering.")
-            else:
-                if is_hi:
-                    why_factors.append("वानस्पतिक बढ़वार के लिए सामान्य परिस्थितियां; खेत में 2-4 सेमी पानी बनाए रखें।")
-                else:
-                    why_factors.append("Favorable vegetative development; maintain shallow standing water layer.")
-        else:
-            if three_day_rain > 70.0:
-                score -= 35.0
-                if is_hi:
-                    why_factors.append(f"भारी वर्षा ({three_day_rain:.1f} मिमी) से खेत में जलभराव और जड़ों के दम घुटने का खतरा है।")
-                else:
-                    why_factors.append(f"Severe rain accumulation ({three_day_rain:.1f} mm) risks root zone saturation and nutrient leaching.")
-            elif three_day_rain >= 15.0:
-                score += 4.0
-                if is_hi:
-                    why_factors.append(f"वर्षा ({three_day_rain:.1f} मिमी) फसल की पानी की जरूरत पूरी करेगी और सिंचाई की लागत बचाएगी।")
-                else:
-                    why_factors.append(f"Rainfall ({three_day_rain:.1f} mm) naturally recharges root zone moisture, saving scheduled irrigation costs.")
-            else:
-                if is_hi:
-                    why_factors.append("वानस्पतिक वृद्धि के लिए मौसम सामान्य है; आवश्यकतानुसार हल्की सिंचाई करें।")
-                else:
-                    why_factors.append("Vegetative canopy expansion proceeds normally under stable ambient conditions.")
-
-    # Clamp suitability score (20 - 98)
-    suitability_score = float(max(min(score, 98.0), 20.0))
-
-    # Categorization
-    if suitability_score >= 80.0:
-        status = "OPTIMAL"
-    elif suitability_score >= 65.0:
-        status = "FAVORABLE"
-    elif suitability_score >= 45.0:
-        status = "CAUTION"
-    else:
-        status = "UNFAVORABLE"
+    for en_factor, hi_factor in factor_tuples:
+        why_factors.append(hi_factor if is_hi else en_factor)
 
     # 4. Generate STAGE-SPECIFIC and CROP-SPECIFIC Prescriptions
     if stage == "Harvesting":
