@@ -191,8 +191,18 @@ def resolve_location(
             f_lat = float(lat)
             f_lon = float(lon)
             if not np.isnan(f_lat) and not np.isnan(f_lon) and -90 <= f_lat <= 90 and -180 <= f_lon <= 180:
-                disp_name = cleaned.strip() if cleaned and cleaned.strip() else f"GPS ({f_lat:.4f}°N, {f_lon:.4f}°E)"
-                return disp_name, "India", f_lat, f_lon, 12.0
+                clean_name = cleaned.strip() if cleaned else ""
+                # If name is raw coordinates or generic string, reverse-geocode real place name
+                if not clean_name or clean_name.startswith("GPS (") or clean_name.startswith("Location (") or clean_name.lower() == "current location":
+                    try:
+                        from api.location import reverse_geocode
+                        rg = reverse_geocode(f_lat, f_lon)
+                        if rg.get("status") == "success" and rg.get("name") and not rg["name"].startswith("GPS ("):
+                            return rg["name"], rg.get("state", "India"), f_lat, f_lon, 12.0
+                    except Exception:
+                        pass
+                    clean_name = f"Location ({f_lat:.3f}°N, {f_lon:.3f}°E)"
+                return clean_name, "India", f_lat, f_lon, 12.0
         except Exception:
             pass
 
@@ -200,8 +210,18 @@ def resolve_location(
     pin_match = re.search(r'\b([1-9][0-9]{5})\b', cleaned)
     if pin_match:
         try:
-            from api.location import geocode_pincode_coordinates
+            from api.location import lookup_pincode, geocode_pincode_coordinates
             pin = pin_match.group(1)
+            pin_data = lookup_pincode(pin)
+            if pin_data and pin_data.get("status") == "success" and pin_data.get("results"):
+                first_po = pin_data["results"][0]
+                po_name = first_po.get("name") or first_po.get("village") or f"PIN {pin}"
+                po_dist = first_po.get("district") or ""
+                po_state = first_po.get("state") or "India"
+                p_lat = float(first_po.get("lat") or pin_data.get("lat") or 28.7)
+                p_lon = float(first_po.get("lon") or pin_data.get("lon") or 77.5)
+                disp_name = f"{po_name} ({po_dist})" if po_dist and po_name.lower() != po_dist.lower() else po_name
+                return disp_name, po_state, p_lat, p_lon, 12.0
             p_coords = geocode_pincode_coordinates(pin)
             if p_coords:
                 disp_name = cleaned if len(cleaned) > 6 else f"PIN Code {pin}"

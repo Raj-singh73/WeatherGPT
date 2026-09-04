@@ -151,10 +151,17 @@ export default function WeatherMap({
   // Layer switcher menu open/close
   const [isLayerMenuOpen, setIsLayerMenuOpen] = useState(false);
 
-  // Reset localCoords when external props change
+  // Clear temporary in-map localCoords once the parent component props have synchronized
   useEffect(() => {
-    setLocalCoords(null);
-  }, [latitude, longitude, locationName]);
+    if (localCoords) {
+      if (
+        Math.abs(validLat - localCoords.lat) < 0.0001 &&
+        Math.abs(validLon - localCoords.lon) < 0.0001
+      ) {
+        setLocalCoords(null);
+      }
+    }
+  }, [validLat, validLon, localCoords]);
 
   // Auto zoom to high-resolution village view whenever location updates
   const prevCoordsRef = useRef({ lat: validLat, lon: validLon });

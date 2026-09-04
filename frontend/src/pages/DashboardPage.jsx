@@ -43,10 +43,26 @@ export default function DashboardPage({
     day: 'numeric'
   });
 
-  const displayLocation = selectedLocation || currentWeather?.location || 'Nagpur';
+  const cleanSelected = (selectedLocation || '').trim();
+  const isSelectedRawCoords = !cleanSelected || cleanSelected.startsWith('GPS (') || cleanSelected.startsWith('Location (');
+  const cleanWeatherLoc = (currentWeather?.location || '').trim();
+  const isWeatherRawCoords = !cleanWeatherLoc || cleanWeatherLoc.startsWith('GPS (') || cleanWeatherLoc.startsWith('Location (');
+
+  const displayLocation = !isSelectedRawCoords
+    ? cleanSelected
+    : (!isWeatherRawCoords ? cleanWeatherLoc : (cleanSelected || 'Current Location'));
+
   const displayState = (currentWeather?.state && currentWeather.state !== 'India')
     ? currentWeather.state
     : (user && selectedLocation?.toLowerCase().includes(user.district?.toLowerCase()) ? user.state : (currentWeather?.state || ''));
+
+  // Target coordinates for WeatherMap: prioritize selectedCoordinates for instant synchronization
+  const mapLat = Number.isFinite(selectedCoordinates?.lat)
+    ? selectedCoordinates.lat
+    : (Number.isFinite(currentWeather?.latitude) ? currentWeather.latitude : 21.1458);
+  const mapLon = Number.isFinite(selectedCoordinates?.lon)
+    ? selectedCoordinates.lon
+    : (Number.isFinite(currentWeather?.longitude) ? currentWeather.longitude : 79.0882);
 
   return (
     <div className="space-y-6 pb-12">
@@ -226,8 +242,8 @@ export default function DashboardPage({
         <div className="lg:col-span-6 flex flex-col">
           <WeatherMap
             locationName={displayLocation}
-            latitude={Number.isFinite(currentWeather?.latitude) ? currentWeather.latitude : (selectedCoordinates?.lat || 21.1458)}
-            longitude={Number.isFinite(currentWeather?.longitude) ? currentWeather.longitude : (selectedCoordinates?.lon || 79.0882)}
+            latitude={mapLat}
+            longitude={mapLon}
             temperature={current.temperature || 28.5}
             riskScore={riskScore}
             riskLevel={riskLevel}

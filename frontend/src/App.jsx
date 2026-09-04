@@ -203,17 +203,25 @@ export default function App() {
           const resolvedState = (currRes.value.state && currRes.value.state !== 'India')
             ? currRes.value.state
             : (explicitState || currRes.value.state || '');
+          const isLocRaw = !locName || locName.startsWith('GPS (') || locName.startsWith('Location (') || /^\d{6}$/.test(locName.trim());
+          const friendlyLocName = (!isLocRaw ? locName : (currRes.value.location || locName)).trim();
+
           const weatherPayload = {
             ...currRes.value,
-            location: locName,
+            location: friendlyLocName,
             state: resolvedState
           };
           setCurrentWeather(weatherPayload);
-          localStorage.setItem('weathergpt_cached_weather_' + locName.toLowerCase(), JSON.stringify(weatherPayload));
+          localStorage.setItem('weathergpt_cached_weather_' + friendlyLocName.toLowerCase(), JSON.stringify(weatherPayload));
           if (currRes.value.latitude && currRes.value.longitude) {
             const newCoords = { lat: currRes.value.latitude, lon: currRes.value.longitude };
             setSelectedCoordinates(newCoords);
             localStorage.setItem('weathergpt_coordinates', JSON.stringify(newCoords));
+          }
+          if (isLocRaw && friendlyLocName && friendlyLocName !== locName) {
+            setSelectedLocation(friendlyLocName);
+            localStorage.setItem('weathergpt_manual_location', friendlyLocName);
+            sessionStorage.setItem('weathergpt_manual_location', friendlyLocName);
           }
           loadedAny = true;
         }
