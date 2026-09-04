@@ -31,7 +31,7 @@ export default function App() {
   // Synchronous location resolution on app mount
   const getStartupLocation = () => {
     try {
-      const manualLoc = sessionStorage.getItem('weathergpt_manual_location');
+      const manualLoc = localStorage.getItem('weathergpt_manual_location') || sessionStorage.getItem('weathergpt_manual_location');
       if (manualLoc) return manualLoc;
       const saved = localStorage.getItem('weathergpt_user');
       if (saved) {
@@ -101,8 +101,8 @@ export default function App() {
           setCurrentUser(userData);
           localStorage.setItem('weathergpt_user', JSON.stringify(userData));
 
-          // If no manual location was picked in this session, automatically switch to account address
-          const manualLoc = sessionStorage.getItem('weathergpt_manual_location');
+          // ONLY automatically switch to account address if user has not chosen a manual location
+          const manualLoc = localStorage.getItem('weathergpt_manual_location') || sessionStorage.getItem('weathergpt_manual_location');
           if (!manualLoc) {
             const addr = getUserAccountAddress(userData);
             if (addr) {
@@ -124,7 +124,8 @@ export default function App() {
   const handleAuthSuccess = (userData) => {
     setCurrentUser(userData);
     localStorage.setItem('weathergpt_user', JSON.stringify(userData));
-    // Clear any previous manual session location so newly logged-in account address takes effect immediately
+    // Clear any previous manual location so newly logged-in account address takes effect immediately
+    localStorage.removeItem('weathergpt_manual_location');
     sessionStorage.removeItem('weathergpt_manual_location');
     const userAddr = getUserAccountAddress(userData);
     if (userAddr) {
@@ -140,6 +141,7 @@ export default function App() {
     localStorage.setItem('weathergpt_user', JSON.stringify(updatedUser));
     const newAddr = getUserAccountAddress(updatedUser);
     if (newAddr) {
+      localStorage.removeItem('weathergpt_manual_location');
       sessionStorage.removeItem('weathergpt_manual_location');
       setSelectedLocation(newAddr);
     }
@@ -151,6 +153,7 @@ export default function App() {
   const handleResetToAccountAddress = () => {
     const addr = getUserAccountAddress(currentUser);
     if (addr) {
+      localStorage.removeItem('weathergpt_manual_location');
       sessionStorage.removeItem('weathergpt_manual_location');
       setSelectedLocation(addr);
     }
@@ -164,6 +167,7 @@ export default function App() {
     }
     localStorage.removeItem('weathergpt_token');
     localStorage.removeItem('weathergpt_user');
+    localStorage.removeItem('weathergpt_manual_location');
     sessionStorage.removeItem('weathergpt_manual_location');
     setCurrentUser(null);
     setSelectedLocation('Nagpur');
@@ -172,7 +176,7 @@ export default function App() {
 
   const t = getTranslation(language);
 
-  const loadData = (locName = selectedLocation, lat = null, lon = null) => {
+  const loadData = (locName = selectedLocation, lat = null, lon = null, explicitState = null) => {
     setLoading(true);
     setHasConnectionError(false);
 
@@ -188,8 +192,16 @@ export default function App() {
       .then(([currRes, foreRes, altRes]) => {
         let loadedAny = false;
         if (currRes.status === 'fulfilled' && currRes.value) {
-          setCurrentWeather(currRes.value);
-          localStorage.setItem('weathergpt_cached_weather_' + locName.toLowerCase(), JSON.stringify(currRes.value));
+          const resolvedState = (currRes.value.state && currRes.value.state !== 'India')
+            ? currRes.value.state
+            : (explicitState || currRes.value.state || '');
+          const weatherPayload = {
+            ...currRes.value,
+            location: locName,
+            state: resolvedState
+          };
+          setCurrentWeather(weatherPayload);
+          localStorage.setItem('weathergpt_cached_weather_' + locName.toLowerCase(), JSON.stringify(weatherPayload));
           if (currRes.value.latitude && currRes.value.longitude) {
             setSelectedCoordinates({ lat: currRes.value.latitude, lon: currRes.value.longitude });
           }
@@ -230,7 +242,15 @@ export default function App() {
     const chosenLat = loc.lat ?? loc.latitude;
     const chosenLon = loc.lon ?? loc.longitude;
     skipNextLoadRef.current = true;
-    sessionStorage.setItem('weathergpt_manual_location', loc.name);
+    
+    if (loc.isAccountReset) {
+      localStorage.removeItem('weathergpt_manual_location');
+      sessionStorage.removeItem('weathergpt_manual_location');
+    } else {
+      localStorage.setItem('weathergpt_manual_location', loc.name);
+      sessionStorage.setItem('weathergpt_manual_location', loc.name);
+    }
+
     setSelectedLocation(loc.name);
     if (chosenLat != null && chosenLon != null) {
       setSelectedCoordinates({ lat: chosenLat, lon: chosenLon });
@@ -247,10 +267,11 @@ export default function App() {
       data_source: prev?.data_source || 'LIVE (Open-Meteo API)'
     }));
 
-    loadData(loc.name, chosenLat, chosenLon);
+    loadData(loc.name, chosenLat, chosenLon, loc.state);
   };
 
   const handleManualLocationSelect = (locName) => {
+    localStorage.setItem('weathergpt_manual_location', locName);
     sessionStorage.setItem('weathergpt_manual_location', locName);
     setSelectedLocation(locName);
   };

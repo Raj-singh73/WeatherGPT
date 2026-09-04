@@ -498,7 +498,8 @@ export default function LocationHierarchyModal({
                   district: user?.district,
                   state: user?.state,
                   lat: null,
-                  lon: null
+                  lon: null,
+                  isAccountReset: true
                 });
                 onClose();
               }}

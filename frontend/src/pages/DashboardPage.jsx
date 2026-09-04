@@ -43,8 +43,10 @@ export default function DashboardPage({
     day: 'numeric'
   });
 
-  const displayLocation = currentWeather?.location || selectedLocation;
-  const displayState = currentWeather?.state || user?.state;
+  const displayLocation = selectedLocation || currentWeather?.location || 'Nagpur';
+  const displayState = (currentWeather?.state && currentWeather.state !== 'India')
+    ? currentWeather.state
+    : (user && selectedLocation?.toLowerCase().includes(user.district?.toLowerCase()) ? user.state : (currentWeather?.state || ''));
 
   return (
     <div className="space-y-6 pb-12">
