@@ -28,9 +28,8 @@ export default function App() {
     }
   });
 
-  // Default address: switches automatically to account address on login/restore,
-  // while allowing manual selection anytime during browsing
-  const [selectedLocation, setSelectedLocation] = useState(() => {
+  // Synchronous location resolution on app mount
+  const getStartupLocation = () => {
     try {
       const manualLoc = sessionStorage.getItem('weathergpt_manual_location');
       if (manualLoc) return manualLoc;
@@ -44,12 +43,44 @@ export default function App() {
       // fallback
     }
     return 'Nagpur';
+  };
+
+  const initialLoc = getStartupLocation();
+  const [selectedLocation, setSelectedLocation] = useState(initialLoc);
+
+  // Instant 0ms cached weather for the active location:
+  const [currentWeather, setCurrentWeather] = useState(() => {
+    try {
+      const cached = localStorage.getItem('weathergpt_cached_weather_' + (initialLoc || 'nagpur').toLowerCase());
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
   });
-  const [selectedCoordinates, setSelectedCoordinates] = useState({ lat: 21.1458, lon: 79.0882 });
+
+  const [forecast, setForecast] = useState(() => {
+    try {
+      const cached = localStorage.getItem('weathergpt_cached_forecast_' + (initialLoc || 'nagpur').toLowerCase());
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [selectedCoordinates, setSelectedCoordinates] = useState(() => {
+    try {
+      const cached = localStorage.getItem('weathergpt_cached_weather_' + (initialLoc || 'nagpur').toLowerCase());
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.latitude && parsed.longitude) {
+          return { lat: parsed.latitude, lon: parsed.longitude };
+        }
+      }
+    } catch {}
+    return null;
+  });
+
   const [language, setLanguage] = useState('en');
-  
-  const [currentWeather, setCurrentWeather] = useState(null);
-  const [forecast, setForecast] = useState(null);
   const [alerts, setAlerts] = useState([]);
   const [initialChatPrompt, setInitialChatPrompt] = useState('');
   const [loading, setLoading] = useState(false);
@@ -158,6 +189,7 @@ export default function App() {
         let loadedAny = false;
         if (currRes.status === 'fulfilled' && currRes.value) {
           setCurrentWeather(currRes.value);
+          localStorage.setItem('weathergpt_cached_weather_' + locName.toLowerCase(), JSON.stringify(currRes.value));
           if (currRes.value.latitude && currRes.value.longitude) {
             setSelectedCoordinates({ lat: currRes.value.latitude, lon: currRes.value.longitude });
           }
@@ -165,6 +197,7 @@ export default function App() {
         }
         if (foreRes.status === 'fulfilled' && foreRes.value) {
           setForecast(foreRes.value);
+          localStorage.setItem('weathergpt_cached_forecast_' + locName.toLowerCase(), JSON.stringify(foreRes.value));
           loadedAny = true;
         }
         if (altRes.status === 'fulfilled' && altRes.value) {
@@ -189,7 +222,7 @@ export default function App() {
       skipNextLoadRef.current = false;
       return;
     }
-    loadData(selectedLocation, selectedCoordinates?.lat, selectedCoordinates?.lon);
+    loadData(selectedLocation, null, null);
   }, [selectedLocation]);
 
   // Handler when user confirms location from the State ➔ District ➔ Block ➔ Village modal or map
@@ -309,6 +342,7 @@ export default function App() {
             alerts={alerts}
             selectedCoordinates={selectedCoordinates}
             selectedLocation={selectedLocation}
+            user={currentUser}
             onSelectLocation={handleSelectHierarchyLocation}
             setActiveTab={setActiveTab}
             onQuickChatPrompt={handleQuickChatPrompt}

@@ -20,6 +20,7 @@ export default function DashboardPage({
   alerts = [], 
   selectedCoordinates,
   selectedLocation,
+  user = null,
   onSelectLocation,
   setActiveTab, 
   onQuickChatPrompt,
@@ -42,6 +43,9 @@ export default function DashboardPage({
     day: 'numeric'
   });
 
+  const displayLocation = currentWeather?.location || selectedLocation;
+  const displayState = currentWeather?.state || user?.state;
+
   return (
     <div className="space-y-6 pb-12">
       {/* Top Banner & Station Header */}
@@ -53,8 +57,10 @@ export default function DashboardPage({
               <span>{t.dashboard.liveIntelligence}</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <span>{currentWeather?.location || 'Nagpur'}</span>
-              <span className="text-slate-500 text-2xl font-normal">, {currentWeather?.state || 'Maharashtra'}</span>
+              <span>{displayLocation}</span>
+              {displayState && (
+                <span className="text-slate-500 text-2xl font-normal">, {displayState}</span>
+              )}
             </h1>
             <p className="text-xs text-slate-600 mt-1 flex items-center gap-2">
               <span>{formattedDate}</span>
@@ -96,7 +102,7 @@ export default function DashboardPage({
             <span>{t.dashboard.askWeatherGPT}</span>
           </span>
           {[
-            `Will it rain tomorrow in ${currentWeather?.location || 'Nagpur'}?`,
+            `Will it rain tomorrow in ${displayLocation}?`,
             `Is it safe to travel this weekend?`,
             `Should I irrigate my wheat crop today?`,
             `Show cyclone frequency trends`
@@ -217,7 +223,7 @@ export default function DashboardPage({
         {/* Right Column: Interactive Map */}
         <div className="lg:col-span-6 flex flex-col">
           <WeatherMap
-            locationName={currentWeather?.location || selectedLocation || 'Nagpur'}
+            locationName={displayLocation}
             latitude={Number.isFinite(currentWeather?.latitude) ? currentWeather.latitude : (selectedCoordinates?.lat || 21.1458)}
             longitude={Number.isFinite(currentWeather?.longitude) ? currentWeather.longitude : (selectedCoordinates?.lon || 79.0882)}
             temperature={current.temperature || 28.5}
