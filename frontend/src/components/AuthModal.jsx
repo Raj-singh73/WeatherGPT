@@ -1,7 +1,7 @@
 ﻿import React, { useState } from 'react';
 import { 
   X, Mail, Lock, User, Phone, MapPin, Sprout, 
-  Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, Sparkles, ShieldCheck
+  Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, Sparkles, ShieldCheck, KeyRound
 } from 'lucide-react';
 import { api } from '../api';
 
@@ -22,7 +22,7 @@ export default function AuthModal({
   currentLocation = 'Lucknow',
   language = 'en'
 }) {
-  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register' | 'reset'
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -49,7 +49,7 @@ export default function AuthModal({
     setLoading(true);
 
     try {
-      if (isRegisterMode) {
+      if (authMode === 'register') {
         if (!name.trim()) throw new Error('Please enter your full name.');
         if (!email.trim() || !email.includes('@')) throw new Error('Please provide a valid email address.');
         if (password.length < 6) throw new Error('Password must be at least 6 characters.');
@@ -70,12 +70,12 @@ export default function AuthModal({
         const res = await api.register(payload);
         localStorage.setItem('weathergpt_token', res.token);
         localStorage.setItem('weathergpt_user', JSON.stringify(res.user));
-        setSuccessMsg('Account registered successfully! Recording profile...');
+        setSuccessMsg('Account registered successfully! Recording profile in database...');
         setTimeout(() => {
           onAuthSuccess(res.user);
           onClose();
         }, 800);
-      } else {
+      } else if (authMode === 'login') {
         if (!email.trim() || !password) throw new Error('Please enter both email and password.');
         const res = await api.login({
           email: email.trim().toLowerCase(),
@@ -88,6 +88,19 @@ export default function AuthModal({
           onAuthSuccess(res.user);
           onClose();
         }, 800);
+      } else if (authMode === 'reset') {
+        if (!email.trim() || !email.includes('@')) throw new Error('Please enter your registered email address.');
+        if (password.length < 6) throw new Error('New password must be at least 6 characters.');
+
+        const res = await api.resetPassword({
+          email: email.trim().toLowerCase(),
+          new_password: password
+        });
+        setSuccessMsg(res.message || 'Password reset successfully! Switching to Sign In...');
+        setTimeout(() => {
+          setAuthMode('login');
+          setSuccessMsg('You can now log in with your new password.');
+        }, 1200);
       }
     } catch (err) {
       console.error('Auth error:', err);
@@ -116,16 +129,18 @@ export default function AuthModal({
           
           <div className="flex items-center space-x-2.5">
             <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-sky-400 to-indigo-500 flex items-center justify-center text-white shadow-md">
-              <Sparkles className="h-5 w-5" />
+              {authMode === 'reset' ? <KeyRound className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
             </div>
             <div>
               <h2 className="text-xl font-black tracking-tight text-white">
-                {isRegisterMode ? 'Create WeatherGPT Account' : 'Sign In to WeatherGPT'}
+                {authMode === 'register' && 'Create WeatherGPT Account'}
+                {authMode === 'login' && 'Sign In to WeatherGPT'}
+                {authMode === 'reset' && 'Reset Your Password'}
               </h2>
               <p className="text-xs text-sky-200/80">
-                {isRegisterMode 
-                  ? 'Record your profile and location in our climate database' 
-                  : 'Access your saved location preferences and agro-advisories'}
+                {authMode === 'register' && 'Record your profile and location in our climate database'}
+                {authMode === 'login' && 'Access your saved location preferences and agro-advisories'}
+                {authMode === 'reset' && 'Enter your registered email and choose a new password'}
               </p>
             </div>
           </div>
@@ -134,9 +149,9 @@ export default function AuthModal({
           <div className="flex bg-white/10 p-1 rounded-xl mt-4 backdrop-blur-xs">
             <button
               type="button"
-              onClick={() => { setIsRegisterMode(false); setErrorMsg(''); setSuccessMsg(''); }}
+              onClick={() => { setAuthMode('login'); setErrorMsg(''); setSuccessMsg(''); }}
               className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                !isRegisterMode 
+                authMode === 'login' 
                   ? 'bg-white text-slate-900 shadow-sm' 
                   : 'text-slate-300 hover:text-white'
               }`}
@@ -145,9 +160,9 @@ export default function AuthModal({
             </button>
             <button
               type="button"
-              onClick={() => { setIsRegisterMode(true); setErrorMsg(''); setSuccessMsg(''); }}
+              onClick={() => { setAuthMode('register'); setErrorMsg(''); setSuccessMsg(''); }}
               className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                isRegisterMode 
+                authMode === 'register' 
                   ? 'bg-white text-slate-900 shadow-sm' 
                   : 'text-slate-300 hover:text-white'
               }`}
@@ -178,7 +193,7 @@ export default function AuthModal({
           <form onSubmit={handleSubmit} className="space-y-4">
             
             {/* Registration specific fields */}
-            {isRegisterMode && (
+            {authMode === 'register' && (
               <>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -237,9 +252,20 @@ export default function AuthModal({
 
             {/* Password */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Password <span className="text-rose-500">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-bold text-slate-700">
+                  {authMode === 'reset' ? 'New Password' : 'Password'} <span className="text-rose-500">*</span>
+                </label>
+                {authMode === 'login' && (
+                  <button
+                    type="button"
+                    onClick={() => { setAuthMode('reset'); setErrorMsg(''); setSuccessMsg(''); }}
+                    className="text-[11px] font-semibold text-sky-600 hover:text-sky-800 cursor-pointer"
+                  >
+                    Forgot Password?
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                 <input
@@ -261,7 +287,7 @@ export default function AuthModal({
             </div>
 
             {/* Additional Registration Fields */}
-            {isRegisterMode && (
+            {authMode === 'register' && (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -350,8 +376,10 @@ export default function AuthModal({
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span>Processing...</span>
                 </>
-              ) : isRegisterMode ? (
+              ) : authMode === 'register' ? (
                 <span>Register & Save Profile in Database</span>
+              ) : authMode === 'reset' ? (
+                <span>Reset Password & Update Database</span>
               ) : (
                 <span>Sign In to Account</span>
               )}
@@ -360,26 +388,39 @@ export default function AuthModal({
 
           {/* Bottom Switch Note */}
           <div className="text-center pt-2 text-xs text-slate-500">
-            {isRegisterMode ? (
+            {authMode === 'register' && (
               <p>
                 Already have an account?{' '}
                 <button
                   type="button"
-                  onClick={() => { setIsRegisterMode(false); setErrorMsg(''); }}
+                  onClick={() => { setAuthMode('login'); setErrorMsg(''); }}
                   className="font-bold text-sky-600 hover:underline"
                 >
                   Sign In here
                 </button>
               </p>
-            ) : (
+            )}
+            {authMode === 'login' && (
               <p>
                 Don't have an account yet?{' '}
                 <button
                   type="button"
-                  onClick={() => { setIsRegisterMode(true); setErrorMsg(''); }}
+                  onClick={() => { setAuthMode('register'); setErrorMsg(''); }}
                   className="font-bold text-sky-600 hover:underline"
                 >
                   Create one now
+                </button>
+              </p>
+            )}
+            {authMode === 'reset' && (
+              <p>
+                Remembered your password?{' '}
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode('login'); setErrorMsg(''); }}
+                  className="font-bold text-sky-600 hover:underline"
+                >
+                  Back to Sign In
                 </button>
               </p>
             )}

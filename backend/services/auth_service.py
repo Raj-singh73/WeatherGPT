@@ -1,4 +1,4 @@
-﻿"""
+"""
 auth_service.py - Authentication, Session Security & User Database Engine for WeatherGPT
 Provides persistent SQLite storage for user profiles, credentials, logins, and audit trails.
 """
@@ -124,7 +124,7 @@ def register_user(
         # Check if email already exists
         cur = conn.execute("SELECT id FROM users WHERE email = ?", (clean_email,))
         if cur.fetchone():
-            raise ValueError(f"An account with email '{clean_email}' already exists.")
+            raise ValueError(f"An account with email '{clean_email}' already exists. Please switch to 'Sign In' or use 'Reset Password'.")
 
         cur = conn.execute("""
             INSERT INTO users (
@@ -169,11 +169,11 @@ def authenticate_user(email: str, password: str) -> Tuple[Dict[str, Any], str]:
         row = conn.execute("SELECT * FROM users WHERE email = ? AND is_active = 1", (clean_email,)).fetchone()
         if not row:
             log_activity(conn, None, clean_email, "LOGIN_FAILED", "User not found or inactive")
-            raise ValueError("Invalid email or password.")
+            raise ValueError("No account found with this email. Please switch to 'Create Account' to register.")
 
         if not verify_password(password, row["salt"], row["password_hash"]):
             log_activity(conn, row["id"], clean_email, "LOGIN_FAILED", "Incorrect password")
-            raise ValueError("Invalid email or password.")
+            raise ValueError("Incorrect password. Please re-enter your password or click 'Forgot / Reset Password'.")
 
         # Update last_login_at
         conn.execute("UPDATE users SET last_login_at = ? WHERE id = ?", (now_utc, row["id"]))
@@ -270,3 +270,29 @@ def get_activity_logs(limit: int = 100) -> List[Dict[str, Any]]:
             LIMIT ?
         """, (limit,)).fetchall()
         return [dict(r) for r in rows]
+
+
+def reset_password(email: str, new_password: str) -> Dict[str, Any]:
+    """Updates password hash and salt for given user email."""
+    clean_email = email.strip().lower()
+    if len(new_password) < 6:
+        raise ValueError("Password must be at least 6 characters.")
+    
+    pwd_hash, salt = hash_password(new_password)
+    now_utc = datetime.now(timezone.utc).isoformat()
+
+    with get_connection() as conn:
+        row = conn.execute("SELECT id, name FROM users WHERE email = ? AND is_active = 1", (clean_email,)).fetchone()
+        if not row:
+            raise ValueError(f"No account found with email '{clean_email}'. Please register first.")
+        
+        conn.execute(
+            "UPDATE users SET password_hash = ?, salt = ?, updated_at = ? WHERE id = ?",
+            (pwd_hash, salt, now_utc, row["id"])
+        )
+        # Invalidate old sessions
+        conn.execute("DELETE FROM user_sessions WHERE user_id = ?", (row["id"],))
+        log_activity(conn, row["id"], clean_email, "RESET_PASSWORD", f"Password reset successfully at {now_utc}")
+        updated = conn.execute("SELECT * FROM users WHERE id = ?", (row["id"],)).fetchone()
+        return dict(updated)
+

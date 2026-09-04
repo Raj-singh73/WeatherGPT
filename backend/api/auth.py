@@ -9,6 +9,7 @@ from typing import Optional, Dict, Any
 from models.schemas import (
     UserRegisterRequest,
     UserLoginRequest,
+    PasswordResetRequest,
     UserProfileResponse,
     ProfileUpdateRequest,
     AuthTokenResponse,
@@ -89,6 +90,27 @@ def login(payload: UserLoginRequest):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Login error: {e}")
+
+
+@router.post("/reset-password")
+def reset_password(payload: PasswordResetRequest):
+    """
+    Resets user password in SQLite database.
+    Allows user to regain access if password is forgotten.
+    """
+    try:
+        updated_user = auth_service.reset_password(
+            email=payload.email,
+            new_password=payload.new_password
+        )
+        return {
+            "status": "success",
+            "message": f"Password reset successfully for {updated_user['email']}. You can now sign in with your new password."
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Reset failed: {e}")
 
 
 @router.get("/me", response_model=UserProfileResponse)

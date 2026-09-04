@@ -68,6 +68,7 @@ export const api = {
   getMe: () => client.get('/auth/me').then(r => r.data),
   updateProfile: (payload) => client.put('/auth/profile', payload).then(r => r.data),
   logout: () => client.post('/auth/logout').then(r => r.data),
+  resetPassword: (payload) => client.post('/auth/reset-password', payload).then(r => r.data),
   getAdminRecords: () => client.get('/auth/admin/records').then(r => r.data),
 };
 
