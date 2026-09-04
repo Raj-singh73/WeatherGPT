@@ -475,8 +475,7 @@ def get_forecast(
                             t_min=tn,
                             precipitation=p,
                             wind_gust=g,
-                            climatology=clim,
-                            date_str=times[i] if i < len(times) else None
+                            climatology=clim
                         )
                     except Exception as err:
                         print(f"[WARN] Risk assessment failed for {times[i]}: {err}")
@@ -516,7 +515,7 @@ def get_forecast(
             
             try:
                 risk_assessment = assess_risk_from_daily_features(
-                    location=name, lat=lat_val, lon=lon_val, t_max=tm, t_min=tn, precipitation=p, wind_gust=g, climatology=clim, date_str=date_str
+                    location=name, lat=lat_val, lon=lon_val, t_max=tm, t_min=tn, precipitation=p, wind_gust=g, climatology=clim
                 )
             except Exception as err:
                 risk_assessment = {"risk_score": 15.0, "risk_level": "LOW"}
