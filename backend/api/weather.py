@@ -31,6 +31,7 @@ def get_daily_forecast(
     return get_forecast(location, days=days, lat=lat, lon=lon)
 
 @router.get("/location", response_model=List[LocationItem])
+@router.get("/locations", response_model=List[LocationItem])
 def list_available_locations():
     """Lists pre-indexed Indian cities and districts with coordinates and rainfall climatology."""
     items = []
@@ -47,16 +48,29 @@ def list_available_locations():
 @router.get("/history")
 def get_weather_history(limit: int = Query(30, ge=1, le=365)):
     """Returns historical daily observations from the local master dataset."""
-    import os
     import pandas as pd
-    master_path = settings.DATA_DIR / "processed" / "master_weather_dataset.csv"
-    if not os.path.exists(master_path):
-        return {"error": "Master dataset not yet created"}
-    df = pd.read_csv(master_path)
-    sample = df.tail(limit).to_dict(orient="records")
-    return {
-        "total_available": len(df),
-        "returned_records": len(sample),
-        "data_source": "Open-Meteo & NRSC VIC Ground Observations (data/processed/master_weather_dataset.csv)",
-        "records": sample
-    }
+    master_path = settings.PROCESSED_DATA_DIR / "master_weather_dataset.csv"
+    if not master_path.exists():
+        return {
+            "error": "Master dataset not yet created",
+            "total_available": 0,
+            "returned_records": 0,
+            "records": []
+        }
+    try:
+        df = pd.read_csv(master_path)
+        df = df.fillna(0)
+        sample = df.tail(limit).to_dict(orient="records")
+        return {
+            "total_available": len(df),
+            "returned_records": len(sample),
+            "data_source": "Open-Meteo & NRSC VIC Ground Observations (data/processed/master_weather_dataset.csv)",
+            "records": sample
+        }
+    except Exception as e:
+        return {
+            "error": f"Failed to load history: {e}",
+            "total_available": 0,
+            "returned_records": 0,
+            "records": []
+        }

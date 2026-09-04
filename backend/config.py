@@ -38,6 +38,9 @@ class Settings:
     DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite:///{PROJECT_ROOT}/weathergpt.db")
     
     # Paths
+    DATA_DIR: Path = DATA_DIR
+    PROCESSED_DATA_DIR: Path = PROCESSED_DATA_DIR
+    RAW_DATA_DIR: Path = RAW_DATA_DIR
     MODEL_PATH: Path = MODELS_DIR / "weather_risk_model.pkl"
     METADATA_PATH: Path = MODELS_DIR / "model_metadata.json"
     NETCDF_PATH: Path = RAW_DATA_DIR / "rf_p25_jan_clm.nc"

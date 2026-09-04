@@ -11,9 +11,11 @@ import {
   Globe, 
   Layers,
   Radio,
-  User
+  User,
+  Home
 } from 'lucide-react';
 import { getTranslation } from '../translations';
+import { getUserAccountAddress } from '../utils/addressUtils';
 
 export default function Navbar({ 
   activeTab, 
@@ -25,10 +27,15 @@ export default function Navbar({
   onOpenLocationModal,
   onOpenVoiceModal,
   user = null,
+  onResetToAccountAddress,
   onOpenAuthModal,
   onOpenProfileModal
 }) {
   const t = getTranslation(language);
+  const accountAddress = getUserAccountAddress(user);
+  const isDifferentFromAccount = Boolean(
+    user && accountAddress && selectedLocation?.toLowerCase() !== accountAddress?.toLowerCase()
+  );
 
   const navItems = [
     { id: 'dashboard', label: t.nav.dashboard, icon: CloudSun },
@@ -108,17 +115,30 @@ export default function Navbar({
             </div>
 
             {/* 2. Hierarchical Location Selector Trigger */}
-            <button
-              onClick={onOpenLocationModal}
-              title="Select State ➔ District ➔ Block ➔ Village"
-              className="flex items-center space-x-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 transition-all cursor-pointer flex-shrink-0 shadow-sm"
-            >
-              <MapPin className="h-3.5 w-3.5 text-sky-600 flex-shrink-0" />
-              <span className="font-bold max-w-[85px] sm:max-w-[130px] truncate text-slate-800">
-                {selectedLocation}
-              </span>
-              <Layers className="h-3 w-3 text-slate-400 ml-0.5 hidden sm:inline" />
-            </button>
+            <div className="flex items-center space-x-1 flex-shrink-0">
+              <button
+                onClick={onOpenLocationModal}
+                title="Select State ➔ District ➔ Block ➔ Village (Click to change manually)"
+                className="flex items-center space-x-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 transition-all cursor-pointer flex-shrink-0 shadow-sm"
+              >
+                <MapPin className="h-3.5 w-3.5 text-sky-600 flex-shrink-0" />
+                <span className="font-bold max-w-[85px] sm:max-w-[130px] truncate text-slate-800">
+                  {selectedLocation}
+                </span>
+                <Layers className="h-3 w-3 text-slate-400 ml-0.5 hidden sm:inline" />
+              </button>
+
+              {isDifferentFromAccount && (
+                <button
+                  onClick={onResetToAccountAddress}
+                  title={`Switch back to your account default address: ${accountAddress}`}
+                  className="flex items-center space-x-1 bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-700 rounded-xl px-2 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs"
+                >
+                  <Home className="h-3.5 w-3.5 text-sky-600" />
+                  <span className="hidden xl:inline text-[10px] uppercase tracking-wider font-extrabold">Default</span>
+                </button>
+              )}
+            </div>
 
             {/* 3. Interactive Voice Assistant Button */}
             <button

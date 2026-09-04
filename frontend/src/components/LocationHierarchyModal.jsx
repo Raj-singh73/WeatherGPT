@@ -20,6 +20,7 @@ import {
 } from '../data/indiaAdminData';
 import api from '../api';
 import { getTranslation } from '../translations';
+import { getUserAccountAddress } from '../utils/addressUtils';
 
 const PROMINENT_HUBS = {
   'Maharajganj': [
@@ -50,9 +51,11 @@ export default function LocationHierarchyModal({
   onClose, 
   onSelectLocation, 
   currentLocationName = 'Nagpur', 
-  language = 'en' 
+  language = 'en',
+  user = null
 }) {
   const t = getTranslation(language).locationModal;
+  const accountAddress = getUserAccountAddress(user);
 
   const [activeTab, setActiveTab] = useState('cascade'); // 'cascade', 'pincode', 'gps'
 
@@ -454,19 +457,58 @@ export default function LocationHierarchyModal({
                       <strong className="text-slate-900 group-hover:text-sky-700 block truncate">
                         {item.name}
                       </strong>
-                      <span className="text-[11px] text-slate-500 block truncate">
-                        District: {item.district}, {item.state}
+                      <span className="text-[10px] text-slate-400 block truncate">
+                        {[item.village, item.subDistrict, item.district, item.state].filter(Boolean).join(' • ')}
                       </span>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold text-sky-700 bg-sky-100 px-2 py-0.5 rounded-md flex-shrink-0 ml-2">
-                    {item.type || 'Village'}
+                  <span className="text-[10px] bg-slate-100 group-hover:bg-sky-100 text-slate-600 group-hover:text-sky-800 px-2 py-0.5 rounded-md font-semibold">
+                    Select
                   </span>
                 </button>
               ))}
             </div>
           )}
         </div>
+
+        {/* Quick Select Default Account Address if logged in */}
+        {accountAddress && (
+          <div className="mx-4 my-2 p-3 bg-gradient-to-r from-sky-50 via-indigo-50/40 to-blue-50 border border-sky-200 rounded-2xl flex items-center justify-between shadow-xs">
+            <div className="flex items-center space-x-2.5 truncate">
+              <div className="h-8 w-8 rounded-xl bg-sky-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+                <Home className="h-4 w-4" />
+              </div>
+              <div className="truncate">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider bg-sky-100 text-sky-800 border border-sky-200 px-1.5 py-0.5 rounded-md">
+                    Account Default
+                  </span>
+                  <span className="text-xs font-black text-slate-900 truncate">{accountAddress}</span>
+                </div>
+                <p className="text-[11px] text-slate-500 truncate">
+                  Registered address for {user?.name || 'User'} ({user?.role || 'Farmer'})
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                onSelectLocation({
+                  name: accountAddress,
+                  village: user?.village,
+                  district: user?.district,
+                  state: user?.state,
+                  lat: null,
+                  lon: null
+                });
+                onClose();
+              }}
+              className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1 flex-shrink-0 ml-2"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              <span>Use Account Address</span>
+            </button>
+          </div>
+        )}
 
         {/* Tab Navigation */}
         <div className="flex border-b border-slate-200 bg-slate-50 px-5 pt-2 gap-2 text-xs font-bold">

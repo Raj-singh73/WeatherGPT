@@ -14,20 +14,10 @@ import UserProfileModal from './components/UserProfileModal';
 import api from './api';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { getTranslation } from './translations';
+import { getUserAccountAddress } from './utils/addressUtils';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [selectedLocation, setSelectedLocation] = useState('Nagpur');
-  const [selectedCoordinates, setSelectedCoordinates] = useState({ lat: 21.1458, lon: 79.0882 });
-  const [language, setLanguage] = useState('en');
-  
-  const [currentWeather, setCurrentWeather] = useState(null);
-  const [forecast, setForecast] = useState(null);
-  const [alerts, setAlerts] = useState([]);
-  const [initialChatPrompt, setInitialChatPrompt] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [hasConnectionError, setHasConnectionError] = useState(false);
-
   // User Authentication & Profile State
   const [currentUser, setCurrentUser] = useState(() => {
     try {
@@ -37,6 +27,33 @@ export default function App() {
       return null;
     }
   });
+
+  // Default address: switches automatically to account address on login/restore,
+  // while allowing manual selection anytime during browsing
+  const [selectedLocation, setSelectedLocation] = useState(() => {
+    try {
+      const manualLoc = sessionStorage.getItem('weathergpt_manual_location');
+      if (manualLoc) return manualLoc;
+      const saved = localStorage.getItem('weathergpt_user');
+      if (saved) {
+        const u = JSON.parse(saved);
+        const addr = getUserAccountAddress(u);
+        if (addr) return addr;
+      }
+    } catch {
+      // fallback
+    }
+    return 'Nagpur';
+  });
+  const [selectedCoordinates, setSelectedCoordinates] = useState({ lat: 21.1458, lon: 79.0882 });
+  const [language, setLanguage] = useState('en');
+  
+  const [currentWeather, setCurrentWeather] = useState(null);
+  const [forecast, setForecast] = useState(null);
+  const [alerts, setAlerts] = useState([]);
+  const [initialChatPrompt, setInitialChatPrompt] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [hasConnectionError, setHasConnectionError] = useState(false);
 
   // Modals
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
@@ -52,6 +69,18 @@ export default function App() {
         .then((userData) => {
           setCurrentUser(userData);
           localStorage.setItem('weathergpt_user', JSON.stringify(userData));
+
+          // If no manual location was picked in this session, automatically switch to account address
+          const manualLoc = sessionStorage.getItem('weathergpt_manual_location');
+          if (!manualLoc) {
+            const addr = getUserAccountAddress(userData);
+            if (addr) {
+              setSelectedLocation(addr);
+            }
+          }
+          if (userData.preferred_language) {
+            setLanguage(userData.preferred_language);
+          }
         })
         .catch(() => {
           localStorage.removeItem('weathergpt_token');
@@ -63,11 +92,36 @@ export default function App() {
 
   const handleAuthSuccess = (userData) => {
     setCurrentUser(userData);
-    if (userData.district) {
-      setSelectedLocation(userData.district);
+    localStorage.setItem('weathergpt_user', JSON.stringify(userData));
+    // Clear any previous manual session location so newly logged-in account address takes effect immediately
+    sessionStorage.removeItem('weathergpt_manual_location');
+    const userAddr = getUserAccountAddress(userData);
+    if (userAddr) {
+      setSelectedLocation(userAddr);
     }
     if (userData.preferred_language) {
       setLanguage(userData.preferred_language);
+    }
+  };
+
+  const handleUserUpdated = (updatedUser) => {
+    setCurrentUser(updatedUser);
+    localStorage.setItem('weathergpt_user', JSON.stringify(updatedUser));
+    const newAddr = getUserAccountAddress(updatedUser);
+    if (newAddr) {
+      sessionStorage.removeItem('weathergpt_manual_location');
+      setSelectedLocation(newAddr);
+    }
+    if (updatedUser.preferred_language) {
+      setLanguage(updatedUser.preferred_language);
+    }
+  };
+
+  const handleResetToAccountAddress = () => {
+    const addr = getUserAccountAddress(currentUser);
+    if (addr) {
+      sessionStorage.removeItem('weathergpt_manual_location');
+      setSelectedLocation(addr);
     }
   };
 
@@ -79,7 +133,9 @@ export default function App() {
     }
     localStorage.removeItem('weathergpt_token');
     localStorage.removeItem('weathergpt_user');
+    sessionStorage.removeItem('weathergpt_manual_location');
     setCurrentUser(null);
+    setSelectedLocation('Nagpur');
     setIsProfileModalOpen(false);
   };
 
@@ -89,8 +145,9 @@ export default function App() {
     setLoading(true);
     setHasConnectionError(false);
 
-    const targetLat = lat ?? selectedCoordinates?.lat;
-    const targetLon = lon ?? selectedCoordinates?.lon;
+    // Only pass lat/lon if they were explicitly provided for this specific location
+    const targetLat = lat != null ? lat : null;
+    const targetLon = lon != null ? lon : null;
 
     Promise.allSettled([
       api.getCurrentWeather(locName, targetLat, targetLon),
@@ -140,6 +197,7 @@ export default function App() {
     const chosenLat = loc.lat ?? loc.latitude;
     const chosenLon = loc.lon ?? loc.longitude;
     skipNextLoadRef.current = true;
+    sessionStorage.setItem('weathergpt_manual_location', loc.name);
     setSelectedLocation(loc.name);
     if (chosenLat != null && chosenLon != null) {
       setSelectedCoordinates({ lat: chosenLat, lon: chosenLon });
@@ -159,6 +217,11 @@ export default function App() {
     loadData(loc.name, chosenLat, chosenLon);
   };
 
+  const handleManualLocationSelect = (locName) => {
+    sessionStorage.setItem('weathergpt_manual_location', locName);
+    setSelectedLocation(locName);
+  };
+
   const handleQuickChatPrompt = (promptText) => {
     setInitialChatPrompt(promptText);
     setActiveTab('chat');
@@ -171,12 +234,13 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         selectedLocation={selectedLocation}
-        setSelectedLocation={setSelectedLocation}
+        setSelectedLocation={handleManualLocationSelect}
         language={language}
         setLanguage={setLanguage}
         onOpenLocationModal={() => setIsLocationModalOpen(true)}
         onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
         user={currentUser}
+        onResetToAccountAddress={handleResetToAccountAddress}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
       />
@@ -188,6 +252,7 @@ export default function App() {
         onSelectLocation={handleSelectHierarchyLocation}
         currentLocationName={selectedLocation}
         language={language}
+        user={currentUser}
       />
 
       {/* Voice Assistant Modal (Talk & Listen) */}
@@ -212,7 +277,7 @@ export default function App() {
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
         user={currentUser}
-        onUserUpdated={(updatedUser) => setCurrentUser(updatedUser)}
+        onUserUpdated={handleUserUpdated}
         onLogout={handleLogout}
       />
 

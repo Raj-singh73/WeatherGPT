@@ -255,9 +255,9 @@ export default function ForecastPage({ forecast, location = 'Nagpur', language =
                 <td className="py-3.5 text-indigo-700 font-semibold">{Math.round(d.windGust)} km/h</td>
                 <td className="py-3.5 pr-2">
                   <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase border ${
-                    d.riskLevel === 'SEVERE' ? 'bg-rose-100 text-rose-800 border-rose-200' :
-                    d.riskLevel === 'HIGH' ? 'bg-orange-100 text-orange-800 border-orange-200' :
-                    d.riskLevel === 'MODERATE' ? 'bg-amber-100 text-amber-800 border-amber-200' :
+                    d.riskLevel?.toUpperCase() === 'SEVERE' ? 'bg-rose-100 text-rose-800 border-rose-200' :
+                    d.riskLevel?.toUpperCase() === 'HIGH' ? 'bg-orange-100 text-orange-800 border-orange-200' :
+                    d.riskLevel?.toUpperCase() === 'MODERATE' ? 'bg-amber-100 text-amber-800 border-amber-200' :
                     'bg-emerald-100 text-emerald-800 border-emerald-200'
                   }`}>
                     {d.riskLevel}

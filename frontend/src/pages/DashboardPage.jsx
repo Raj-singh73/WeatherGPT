@@ -279,9 +279,9 @@ export default function DashboardPage({
                 {/* Day Risk Badge */}
                 <div className="mt-2.5 pt-2 border-t border-slate-200">
                   <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase border ${
-                    day.risk_level === 'SEVERE' ? 'bg-rose-100 text-rose-800 border-rose-200' :
-                    day.risk_level === 'HIGH' ? 'bg-orange-100 text-orange-800 border-orange-200' :
-                    day.risk_level === 'MODERATE' ? 'bg-amber-100 text-amber-800 border-amber-200' :
+                    day.risk_level?.toUpperCase() === 'SEVERE' ? 'bg-rose-100 text-rose-800 border-rose-200' :
+                    day.risk_level?.toUpperCase() === 'HIGH' ? 'bg-orange-100 text-orange-800 border-orange-200' :
+                    day.risk_level?.toUpperCase() === 'MODERATE' ? 'bg-amber-100 text-amber-800 border-amber-200' :
                     'bg-emerald-100 text-emerald-800 border-emerald-200'
                   }`}>
                     {day.risk_level}

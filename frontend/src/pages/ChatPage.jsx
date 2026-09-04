@@ -521,7 +521,7 @@ export default function ChatPage({
                         <div className="bg-white px-2 py-1.5 rounded-lg border border-slate-200 flex items-center justify-between shadow-2xs">
                           <span className="text-slate-500 font-medium">ML Risk</span>
                           <span className="font-extrabold text-slate-800">
-                            {msg.riskAssessment.risk_level} ({Math.round(msg.riskAssessment.risk_score)}/100)
+                            {msg.riskAssessment.risk_level} ({Math.round(msg.riskAssessment.risk_score || 0)}/100)
                           </span>
                         </div>
                       )}
