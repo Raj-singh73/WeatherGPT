@@ -11,6 +11,15 @@ const client = axios.create({
   },
 });
 
+// Request Interceptor: Attach bearer token if stored in localStorage
+client.interceptors.request.use((config) => {
+  const token = localStorage.getItem('weathergpt_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 // Resilient Interceptor: If Vite proxy returns 502/504 or network error, automatically failover to direct backend port 8000
 client.interceptors.response.use(
   (response) => response,
@@ -53,6 +62,13 @@ export const api = {
   chatVoice: (formData) => client.post('/chat/voice', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }).then(r => r.data),
+  // Authentication & Profile Endpoints
+  register: (payload) => client.post('/auth/register', payload).then(r => r.data),
+  login: (payload) => client.post('/auth/login', payload).then(r => r.data),
+  getMe: () => client.get('/auth/me').then(r => r.data),
+  updateProfile: (payload) => client.put('/auth/profile', payload).then(r => r.data),
+  logout: () => client.post('/auth/logout').then(r => r.data),
+  getAdminRecords: () => client.get('/auth/admin/records').then(r => r.data),
 };
 
 export default api;

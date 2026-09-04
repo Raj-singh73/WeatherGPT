@@ -29,6 +29,8 @@ from api.climate import router as climate_router
 from api.farmer import router as farmer_router
 from api.chatbot import router as chatbot_router
 from api.location import router as location_router
+from api.auth import router as auth_router
+from services import auth_service
 
 try:
     get_model()
@@ -49,6 +51,11 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"  [WARN] ML Model initialization warning: {e}")
         _ML_READY = False
+    try:
+        auth_service.init_db()
+        print("  [OK] User Authentication SQLite Database initialized.")
+    except Exception as e:
+        print(f"  [WARN] User Auth DB initialization warning: {e}")
     print("="*60)
     yield
     print("[INFO] WeatherGPT Backend shutting down gracefully.")
@@ -77,6 +84,7 @@ app.include_router(climate_router)
 app.include_router(farmer_router)
 app.include_router(chatbot_router)
 app.include_router(location_router)
+app.include_router(auth_router)
 
 @app.get("/api/health", response_model=HealthResponse, tags=["Health"])
 def health_check():

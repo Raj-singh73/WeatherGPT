@@ -10,7 +10,8 @@ import {
   MapPin, 
   Globe, 
   Layers,
-  Radio
+  Radio,
+  User
 } from 'lucide-react';
 import { getTranslation } from '../translations';
 
@@ -22,7 +23,10 @@ export default function Navbar({
   language, 
   setLanguage,
   onOpenLocationModal,
-  onOpenVoiceModal
+  onOpenVoiceModal,
+  user = null,
+  onOpenAuthModal,
+  onOpenProfileModal
 }) {
   const t = getTranslation(language);
 
@@ -125,6 +129,34 @@ export default function Navbar({
               <Radio className="h-3.5 w-3.5 animate-pulse" />
               <span className="hidden md:inline">{t.nav.voiceAssistant}</span>
             </button>
+
+            {/* 4. User Profile / Sign In Button */}
+            {user ? (
+              <button
+                onClick={onOpenProfileModal}
+                title={`Signed in as ${user.name} (${user.role || 'Farmer'})`}
+                className="flex items-center space-x-1.5 bg-gradient-to-r from-sky-50 to-indigo-50 hover:from-sky-100 hover:to-indigo-100 border border-sky-200/80 rounded-xl px-2.5 py-1 text-xs text-slate-800 transition-all cursor-pointer flex-shrink-0 shadow-xs ring-1 ring-sky-200/50"
+              >
+                <div className="h-6 w-6 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-600 text-white font-black text-[10px] flex items-center justify-center flex-shrink-0 shadow-xs">
+                  {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                </div>
+                <span className="font-bold max-w-[85px] sm:max-w-[110px] truncate text-slate-800 text-[11px]">
+                  {user.name}
+                </span>
+                <span className="hidden sm:inline text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-sky-200/70 text-sky-800">
+                  {user.role === 'Farmer' ? '🌾 Kisan' : user.role || 'User'}
+                </span>
+              </button>
+            ) : (
+              <button
+                onClick={onOpenAuthModal}
+                title="Sign In or Create Account"
+                className="flex items-center space-x-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 transition-all cursor-pointer flex-shrink-0 shadow-sm"
+              >
+                <User className="h-3.5 w-3.5 text-sky-600" />
+                <span>Sign In</span>
+              </button>
+            )}
 
           </div>
 

@@ -203,3 +203,61 @@ class ChatResponse(BaseModel):
     speech_text: Optional[str] = None
     audio_url: Optional[str] = None
 
+
+# =====================================================================
+# Authentication & User Profile Schemas
+# =====================================================================
+
+class UserRegisterRequest(BaseModel):
+    name: str = Field(..., min_length=2, max_length=100)
+    email: str = Field(..., min_length=5, max_length=120)
+    password: str = Field(..., min_length=6, max_length=128)
+    role: Optional[str] = "Farmer"  # Farmer, Citizen, Agricultural Scientist, Disaster Manager, Researcher
+    phone: Optional[str] = None
+    state: Optional[str] = "Uttar Pradesh"
+    district: Optional[str] = "Lucknow"
+    village: Optional[str] = None
+    primary_crop: Optional[str] = "Wheat"
+    preferred_language: Optional[str] = "en"
+
+class UserLoginRequest(BaseModel):
+    email: str
+    password: str
+
+class UserProfileResponse(BaseModel):
+    id: int
+    name: str
+    email: str
+    role: str
+    phone: Optional[str] = None
+    state: Optional[str] = None
+    district: Optional[str] = None
+    village: Optional[str] = None
+    primary_crop: Optional[str] = None
+    preferred_language: Optional[str] = "en"
+    created_at: str
+    last_login_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+class ProfileUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    role: Optional[str] = None
+    state: Optional[str] = None
+    district: Optional[str] = None
+    village: Optional[str] = None
+    primary_crop: Optional[str] = None
+    preferred_language: Optional[str] = None
+
+class AuthTokenResponse(BaseModel):
+    token: str
+    token_type: str = "Bearer"
+    user: UserProfileResponse
+    message: Optional[str] = "Authentication successful"
+
+class AdminRecordsResponse(BaseModel):
+    total_users: int
+    users: List[Dict[str, Any]]
+    recent_logs: List[Dict[str, Any]]
+
+

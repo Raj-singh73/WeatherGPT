@@ -9,6 +9,8 @@ import ClimatePage from './pages/ClimatePage';
 import AboutPage from './pages/AboutPage';
 import LocationHierarchyModal from './components/LocationHierarchyModal';
 import VoiceAssistantModal from './components/VoiceAssistantModal';
+import AuthModal from './components/AuthModal';
+import UserProfileModal from './components/UserProfileModal';
 import api from './api';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { getTranslation } from './translations';
@@ -26,9 +28,60 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [hasConnectionError, setHasConnectionError] = useState(false);
 
+  // User Authentication & Profile State
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('weathergpt_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
   // Modals
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+  // Restore authenticated session from token on startup
+  useEffect(() => {
+    const token = localStorage.getItem('weathergpt_token');
+    if (token) {
+      api.getMe()
+        .then((userData) => {
+          setCurrentUser(userData);
+          localStorage.setItem('weathergpt_user', JSON.stringify(userData));
+        })
+        .catch(() => {
+          localStorage.removeItem('weathergpt_token');
+          localStorage.removeItem('weathergpt_user');
+          setCurrentUser(null);
+        });
+    }
+  }, []);
+
+  const handleAuthSuccess = (userData) => {
+    setCurrentUser(userData);
+    if (userData.district) {
+      setSelectedLocation(userData.district);
+    }
+    if (userData.preferred_language) {
+      setLanguage(userData.preferred_language);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await api.logout();
+    } catch (e) {
+      console.warn('Logout API failed, clearing local state', e);
+    }
+    localStorage.removeItem('weathergpt_token');
+    localStorage.removeItem('weathergpt_user');
+    setCurrentUser(null);
+    setIsProfileModalOpen(false);
+  };
 
   const t = getTranslation(language);
 
@@ -123,6 +176,9 @@ export default function App() {
         setLanguage={setLanguage}
         onOpenLocationModal={() => setIsLocationModalOpen(true)}
         onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
+        user={currentUser}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onOpenProfileModal={() => setIsProfileModalOpen(true)}
       />
 
       {/* State ➔ District ➔ Block ➔ Village Hierarchy Modal */}
@@ -140,6 +196,24 @@ export default function App() {
         onClose={() => setIsVoiceModalOpen(false)}
         location={selectedLocation}
         language={language}
+      />
+
+      {/* Authentication Modal (Sign In / Register) */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onAuthSuccess={handleAuthSuccess}
+        currentLocation={selectedLocation}
+        language={language}
+      />
+
+      {/* User Profile & Database Inspector Modal */}
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        user={currentUser}
+        onUserUpdated={(updatedUser) => setCurrentUser(updatedUser)}
+        onLogout={handleLogout}
       />
 
       {/* Connection Notice Banner if Backend Offline */}

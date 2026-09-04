@@ -37,3 +37,8 @@ env/
 Thumbs.db
 
 *.zip
+
+*.db-shm
+*.db-wal
+
+*.db
