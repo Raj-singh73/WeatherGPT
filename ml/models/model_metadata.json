@@ -1,0 +1,216 @@
+{
+  "model_name": "HistGradientBoostingClassifier",
+  "training_date": "2026-09-04T18:08:56.131175",
+  "algorithm_family": "Ensemble Decision Trees (Scikit-Learn)",
+  "features": [
+    "temperature_mean",
+    "temperature_max",
+    "temperature_min",
+    "humidity_mean",
+    "humidity_max",
+    "wind_speed",
+    "wind_gust",
+    "surface_pressure",
+    "precipitation",
+    "rainfall_1d",
+    "rainfall_3d",
+    "rainfall_7d",
+    "rainfall_30d",
+    "rainfall_climatology",
+    "rainfall_anomaly",
+    "rainfall_anomaly_percent",
+    "temperature_change_24h",
+    "rainfall_change_24h",
+    "soil_moisture",
+    "latitude",
+    "longitude",
+    "month",
+    "day_of_year",
+    "season_code"
+  ],
+  "feature_importance_ranking": [
+    {
+      "feature": "precipitation",
+      "importance": 0.116
+    },
+    {
+      "feature": "wind_gust",
+      "importance": 0.1158
+    },
+    {
+      "feature": "surface_pressure",
+      "importance": 0.0974
+    },
+    {
+      "feature": "soil_moisture",
+      "importance": 0.0909
+    },
+    {
+      "feature": "rainfall_1d",
+      "importance": 0.0857
+    },
+    {
+      "feature": "rainfall_30d",
+      "importance": 0.0749
+    },
+    {
+      "feature": "rainfall_7d",
+      "importance": 0.0678
+    },
+    {
+      "feature": "rainfall_3d",
+      "importance": 0.0538
+    },
+    {
+      "feature": "temperature_max",
+      "importance": 0.0489
+    },
+    {
+      "feature": "rainfall_anomaly_percent",
+      "importance": 0.0387
+    },
+    {
+      "feature": "rainfall_anomaly",
+      "importance": 0.0305
+    },
+    {
+      "feature": "wind_speed",
+      "importance": 0.0283
+    },
+    {
+      "feature": "temperature_mean",
+      "importance": 0.0257
+    },
+    {
+      "feature": "rainfall_change_24h",
+      "importance": 0.0228
+    },
+    {
+      "feature": "temperature_min",
+      "importance": 0.0219
+    },
+    {
+      "feature": "day_of_year",
+      "importance": 0.0147
+    },
+    {
+      "feature": "humidity_mean",
+      "importance": 0.0144
+    },
+    {
+      "feature": "humidity_max",
+      "importance": 0.0134
+    },
+    {
+      "feature": "temperature_change_24h",
+      "importance": 0.0085
+    },
+    {
+      "feature": "month",
+      "importance": 0.0081
+    },
+    {
+      "feature": "season_code",
+      "importance": 0.0075
+    },
+    {
+      "feature": "longitude",
+      "importance": 0.005
+    },
+    {
+      "feature": "rainfall_climatology",
+      "importance": 0.0049
+    },
+    {
+      "feature": "latitude",
+      "importance": 0.0045
+    }
+  ],
+  "targets": {
+    "classification": "weather_risk_level (0=LOW, 1=MODERATE, 2=HIGH, 3=SEVERE)",
+    "regression": "risk_score (0.0 to 100.0 continuous)"
+  },
+  "evaluation_metrics": {
+    "accuracy": 0.9917,
+    "macro_f1": 0.9827,
+    "macro_precision": 0.9808,
+    "macro_recall": 0.9846,
+    "weighted_f1": 0.9917,
+    "weighted_precision": 0.9918,
+    "weighted_recall": 0.9917,
+    "confusion_matrix": [
+      [
+        1972,
+        9,
+        0,
+        0
+      ],
+      [
+        5,
+        214,
+        3,
+        0
+      ],
+      [
+        0,
+        3,
+        139,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        55
+      ]
+    ],
+    "classification_report": {
+      "LOW (0)": {
+        "precision": 0.9974709155285787,
+        "recall": 0.9954568399798082,
+        "f1-score": 0.9964628600303184,
+        "support": 1981.0
+      },
+      "MODERATE (1)": {
+        "precision": 0.9469026548672567,
+        "recall": 0.963963963963964,
+        "f1-score": 0.9553571428571429,
+        "support": 222.0
+      },
+      "HIGH (2)": {
+        "precision": 0.9788732394366197,
+        "recall": 0.9788732394366197,
+        "f1-score": 0.9788732394366197,
+        "support": 142.0
+      },
+      "SEVERE (3)": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 55.0
+      },
+      "accuracy": 0.9916666666666667,
+      "macro avg": {
+        "precision": 0.9808117024581138,
+        "recall": 0.9845735108450979,
+        "f1-score": 0.9826733105810203,
+        "support": 2400.0
+      },
+      "weighted avg": {
+        "precision": 0.9917509471011021,
+        "recall": 0.9916666666666667,
+        "f1-score": 0.9917009214309777,
+        "support": 2400.0
+      }
+    },
+    "regressor_mae": 0.33,
+    "regressor_r2": 0.9971
+  },
+  "data_provenance": {
+    "training_samples": 9600,
+    "test_samples": 2400,
+    "split_type": "Time-Aware Chronological Split (Zero Future Leakage)",
+    "dataset_type": "Synthetic Demonstration Labels (Multi-hazard Physics Simulation) + Authentic Meteorological Features",
+    "honesty_disclaimer": "Prototype model trained using synthetic demonstration labels + available real weather features. Verify with official authorities for emergency decisions."
+  }
+}

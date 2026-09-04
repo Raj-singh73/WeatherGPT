@@ -1,0 +1,281 @@
+{
+  "project": "WeatherGPT - SIH 2026 Problem Statement SIH26068",
+  "title": "Comprehensive Dataset Inspection and Provenance Report",
+  "timestamp": "2026-09-03T23:37:10.981014",
+  "datasets": {
+    "dataset_1_open_meteo": {
+      "filename": "open-meteo-20.56N78.93E245m.csv",
+      "file_type": "CSV (Station Hourly Observation/Reanalysis)",
+      "size": "1.94 MB",
+      "size_bytes": 2030066,
+      "rows": 40992,
+      "columns": 8,
+      "column_names": [
+        "time",
+        "temperature_2m (\u00b0C)",
+        "relative_humidity_2m (%)",
+        "rain (mm)",
+        "wind_direction_10m (\u00b0)",
+        "wind_gusts_10m (km/h)",
+        "surface_pressure (hPa)",
+        "precipitation (mm)"
+      ],
+      "missing_values": {
+        "time": 0,
+        "temperature_2m (\u00b0C)": 0,
+        "relative_humidity_2m (%)": 0,
+        "rain (mm)": 0,
+        "wind_direction_10m (\u00b0)": 0,
+        "wind_gusts_10m (km/h)": 0,
+        "surface_pressure (hPa)": 0,
+        "precipitation (mm)": 0
+      },
+      "duplicate_count": 0,
+      "date_range": {
+        "start": "2022-01-01T00:00",
+        "end": "2026-09-04T23:00",
+        "temporal_resolution": "hourly"
+      },
+      "geographical_information": {
+        "latitude": 20.56239,
+        "longitude": 78.93146,
+        "elevation_m": 245.0,
+        "timezone": "Asia/Kolkata",
+        "approximate_region": "Central India (near Wardha / Nagpur, Maharashtra)"
+      },
+      "numeric_columns": [
+        "temperature_2m (\u00b0C)",
+        "relative_humidity_2m (%)",
+        "rain (mm)",
+        "wind_direction_10m (\u00b0)",
+        "wind_gusts_10m (km/h)",
+        "surface_pressure (hPa)",
+        "precipitation (mm)"
+      ],
+      "categorical_columns": [
+        "time"
+      ],
+      "sample_statistics": {
+        "temperature_2m (\u00b0C)": {
+          "min": 10.7,
+          "max": 45.1,
+          "mean": 27.52
+        },
+        "relative_humidity_2m (%)": {
+          "min": 7.0,
+          "max": 100.0,
+          "mean": 58.36
+        },
+        "rain (mm)": {
+          "min": 0.0,
+          "max": 26.8,
+          "mean": 0.16
+        },
+        "wind_direction_10m (\u00b0)": {
+          "min": 1.0,
+          "max": 360.0,
+          "mean": 181.81
+        },
+        "wind_gusts_10m (km/h)": {
+          "min": 1.1,
+          "max": 62.6,
+          "mean": 19.0
+        },
+        "surface_pressure (hPa)": {
+          "min": 964.8,
+          "max": 994.3,
+          "mean": 980.57
+        },
+        "precipitation (mm)": {
+          "min": 0.0,
+          "max": 26.8,
+          "mean": 0.17
+        }
+      },
+      "recommended_usage": "Core historical meteorological baseline. Convert hourly data into daily statistics (temperature min/mean/max, precipitation total, wind gusts, pressure) for feature engineering and ML training."
+    },
+    "dataset_2_nrsc_vic_rainfall": {
+      "filename": "nrsc_vic_rainfall.csv",
+      "file_type": "CSV (Hydrological Model Daily Output)",
+      "size": "1.69 MB",
+      "size_bytes": 1771504,
+      "rows": 27075,
+      "columns": 7,
+      "column_names": [
+        "State",
+        "District",
+        "Date",
+        "Year",
+        "Month",
+        "Avg_rainfall",
+        "Agency_name"
+      ],
+      "missing_values": {
+        "State": 0,
+        "District": 0,
+        "Date": 0,
+        "Year": 0,
+        "Month": 0,
+        "Avg_rainfall": 0,
+        "Agency_name": 0
+      },
+      "duplicate_count": 0,
+      "date_range": {
+        "start": "2024-01-01",
+        "end": "2024-12-31",
+        "temporal_resolution": "daily"
+      },
+      "geographical_information": {
+        "states": [
+          "Uttar Pradesh"
+        ],
+        "district_count": 75,
+        "sample_districts": [
+          "Kushi Nagar",
+          "Lalitpur",
+          "Mathura",
+          "Mau",
+          "Meerut",
+          "Kannauj",
+          "Kanpur Dehat",
+          "Kanpur Nagar",
+          "Hardoi",
+          "Hathras"
+        ]
+      },
+      "numeric_columns": [
+        "Year",
+        "Month",
+        "Avg_rainfall"
+      ],
+      "categorical_columns": [
+        "State",
+        "District",
+        "Date",
+        "Agency_name"
+      ],
+      "sample_statistics": {
+        "avg_rainfall_mm": {
+          "min": -0.0249967136,
+          "max": 252.7188201031,
+          "mean": 2.3182
+        }
+      },
+      "recommended_usage": "Indian district-level daily rainfall validation and multi-day accumulation (1d, 3d, 7d, 30d rolling rainfall) for agricultural and soil moisture context."
+    },
+    "dataset_3_cyclone_frequency": {
+      "filename": "annualFrequency-1891-2021.csv",
+      "file_type": "CSV (Historical Climate & Disaster Archive)",
+      "size": "4.26 KB",
+      "size_bytes": 4367,
+      "rows": 131,
+      "columns": 13,
+      "column_names": [
+        "Year",
+        "Cyclonic Disturbances - BOB",
+        "Cyclonic Disturbances - AS",
+        "Cyclonic Disturbances - LAND",
+        "Cyclonic Disturbances - TOTAL",
+        "Cyclones - BOB",
+        "Cyclones - AS",
+        "Cyclones - LAND",
+        "Cyclones - TOTAL",
+        "Severe Cyclones - BOB",
+        "Severe Cyclones - AS",
+        "Severe Cyclones - LAND",
+        "Severe Cyclones - TOTAL"
+      ],
+      "missing_values": {
+        "Year": 0,
+        "Cyclonic Disturbances - BOB": 0,
+        "Cyclonic Disturbances - AS": 0,
+        "Cyclonic Disturbances - LAND": 0,
+        "Cyclonic Disturbances - TOTAL": 0,
+        "Cyclones - BOB": 0,
+        "Cyclones - AS": 0,
+        "Cyclones - LAND": 0,
+        "Cyclones - TOTAL": 0,
+        "Severe Cyclones - BOB": 0,
+        "Severe Cyclones - AS": 0,
+        "Severe Cyclones - LAND": 0,
+        "Severe Cyclones - TOTAL": 0
+      },
+      "duplicate_count": 0,
+      "date_range": {
+        "start_year": 1891,
+        "end_year": 2021,
+        "total_years": 131,
+        "temporal_resolution": "annual"
+      },
+      "geographical_information": {
+        "ocean_basins": [
+          "Bay of Bengal (BOB)",
+          "Arabian Sea (AS)",
+          "Land"
+        ],
+        "region": "North Indian Ocean (India coastal & mainland)"
+      },
+      "numeric_columns": [
+        "Year",
+        "Cyclonic Disturbances - BOB",
+        "Cyclonic Disturbances - AS",
+        "Cyclonic Disturbances - LAND",
+        "Cyclonic Disturbances - TOTAL",
+        "Cyclones - BOB",
+        "Cyclones - AS",
+        "Cyclones - LAND",
+        "Cyclones - TOTAL",
+        "Severe Cyclones - BOB",
+        "Severe Cyclones - AS",
+        "Severe Cyclones - LAND",
+        "Severe Cyclones - TOTAL"
+      ],
+      "categorical_columns": [],
+      "summary_totals": {
+        "total_cyclones_recorded": 676,
+        "total_severe_cyclones": 325,
+        "cyclones_bob": 526,
+        "cyclones_as": 136
+      },
+      "recommended_usage": "Macro-climate analytics and disaster frequency trends (131 years). Used on Climate Analytics dashboard to visualize long-term cyclone frequency in Bay of Bengal vs Arabian Sea. NOT used for short-term daily weather ML."
+    },
+    "dataset_4_rainfall_climatology_netcdf": {
+      "filename": "rf_p25_jan_clm.nc",
+      "file_type": "NetCDF-3 64-bit Offset (Gridded Climatology)",
+      "size": "138.91 KB",
+      "size_bytes": 142239,
+      "dimensions": {
+        "latitude_points": 129,
+        "longitude_points": 135,
+        "grid_resolution_degrees": 0.25
+      },
+      "variables": [
+        "rf",
+        "lat",
+        "lon"
+      ],
+      "geographical_information": {
+        "latitude_range": [
+          6.5,
+          38.5
+        ],
+        "longitude_range": [
+          66.5,
+          100.0
+        ],
+        "coverage": "Indian Subcontinent (0.25 x 0.25 deg IMD high-resolution grid)"
+      },
+      "climatology_period": "January Climatology (rf_p25_jan_clm)",
+      "grid_statistics_mm": {
+        "min": 0.0,
+        "max": 163.56,
+        "mean": 16.3
+      },
+      "recommended_usage": "Extract spatial baseline climatological rainfall for any coordinate (lat, lon) using 2D nearest neighbor or bilinear interpolation. Used to compute rainfall anomaly: (actual_rainfall - climatology) / max(climatology, epsilon)."
+    }
+  },
+  "summary": {
+    "total_real_datasets": 4,
+    "provenance_policy": "Strict separation between REAL DATA (data/raw/) and SYNTHETIC DEMONSTRATION LABELS (data/synthetic/)."
+  }
+}

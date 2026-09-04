@@ -1,0 +1,205 @@
+"""
+schemas.py - Pydantic Request & Response Data Contracts for WeatherGPT API
+SIH 2026 Problem Statement SIH26068
+"""
+
+from pydantic import BaseModel, Field
+from typing import List, Dict, Optional, Any
+
+class HealthResponse(BaseModel):
+    status: str = "healthy"
+    app_name: str = "WeatherGPT"
+    version: str = "1.0.0"
+    ml_model_loaded: bool
+    live_weather_api: str
+    provenance_mode: str = "Real datasets + Physics-constrained ML"
+
+class LocationItem(BaseModel):
+    name: str
+    state: str
+    latitude: float
+    longitude: float
+    rainfall_climatology_mm: float
+
+class CurrentWeatherMetrics(BaseModel):
+    temperature: float
+    apparent_temperature: float
+    relative_humidity: float
+    precipitation: float
+    rain: float
+    wind_speed: float
+    wind_gust: float
+    surface_pressure: float
+    weather_code: int
+    weather_description: str
+    is_day: int
+    timestamp: str
+    precipitation_probability: Optional[float] = 0.0
+    precipitation_intensity: Optional[str] = "No Rain"
+
+class WeatherCurrentResponse(BaseModel):
+    location: str
+    state: str
+    latitude: float
+    longitude: float
+    elevation_m: float
+    data_source: str # "LIVE (Open-Meteo API)" or "DEMO/OFFLINE (Historical Observation)"
+    current: CurrentWeatherMetrics
+
+class DailyForecastItem(BaseModel):
+    date: str
+    temperature_max: float
+    temperature_min: float
+    precipitation_sum: float
+    rain_sum: float
+    wind_speed_max: float
+    wind_gust_max: float
+    weather_code: int
+    weather_description: str
+    risk_score: float
+    risk_level: str
+    precipitation_probability_max: Optional[float] = 0.0
+    precipitation_hours: Optional[float] = 0.0
+    precipitation_category: Optional[str] = "No Rain"
+
+class WeatherForecastResponse(BaseModel):
+    location: str
+    state: str
+    latitude: float
+    longitude: float
+    data_source: str
+    forecast_days: List[DailyForecastItem]
+
+class RiskPredictionRequest(BaseModel):
+    location: Optional[str] = "Nagpur"
+    latitude: Optional[float] = 21.1458
+    longitude: Optional[float] = 79.0882
+    temperature_mean: float = 28.0
+    temperature_max: float = 33.0
+    temperature_min: float = 24.0
+    humidity_mean: float = 75.0
+    humidity_max: float = 90.0
+    wind_speed: float = 20.0
+    wind_gust: float = 40.0
+    surface_pressure: float = 1002.0
+    precipitation: float = 15.0
+    rainfall_1d: float = 15.0
+    rainfall_3d: float = 30.0
+    rainfall_7d: float = 50.0
+    rainfall_30d: float = 120.0
+    rainfall_climatology: float = 13.5
+    rainfall_anomaly: float = 0.11
+    rainfall_anomaly_percent: float = 11.0
+    temperature_change_24h: float = 0.5
+    rainfall_change_24h: float = 5.0
+    soil_moisture: float = 55.0
+    month: int = 7
+    day_of_year: int = 195
+    season: str = "Monsoon"
+
+class RiskPredictionResponse(BaseModel):
+    location: str
+    risk_score: float = Field(..., ge=0.0, le=100.0)
+    risk_level: str
+    risk_level_code: int
+    confidence: float
+    class_probabilities: Dict[str, float]
+    key_factors: List[str]
+    recommendation: str
+    disclaimer: str = "AI-generated risk assessment — verify with official authorities for emergency decisions."
+
+class AlertItem(BaseModel):
+    id: str
+    title: str
+    location: str
+    state: str
+    severity: str # "NORMAL", "WATCH", "WARNING", "SEVERE"
+    alert_type: str # "HEAVY_RAIN", "THUNDERSTORM", "HEATWAVE", "CYCLONE_ALERT", "FLOOD_RISK"
+    issued_time: str
+    valid_until: str
+    source: str # "DEMO ALERT (AI Simulated Multi-hazard Threshold)"
+    is_demo: bool = True
+    summary: str
+    action_instructions: str
+    vulnerability_zone: Optional[str] = "Inland Alluvial Plains"
+    hazard_category: Optional[str] = "HYDRO_METEOROLOGICAL"
+    imd_color_code: Optional[str] = "YELLOW" # RED, ORANGE, YELLOW, GREEN
+    life_survival_protocols: Optional[List[str]] = []
+    emergency_contacts: Optional[Dict[str, str]] = {}
+    key_thresholds: Optional[List[str]] = []
+
+class AlertsResponse(BaseModel):
+    total_active_alerts: int
+    alerts: List[AlertItem]
+    disclaimer: str = "DEMO ALERT — AI-generated multi-hazard advisory for prototype testing."
+
+class CycloneRecordItem(BaseModel):
+    year: int
+    cyclonic_disturbances_total: int
+    cyclones_total: int
+    severe_cyclones_total: int
+    cyclones_bob: int
+    cyclones_as: int
+
+class ClimateTrendsResponse(BaseModel):
+    description: str
+    data_source: str = "IMD Cyclone E-Atlas (1891-2021)"
+    total_records: int
+    period: str
+    cyclone_trends: List[CycloneRecordItem]
+    climatology_baseline: Dict[str, Any]
+
+class FarmerAdvisoryRequest(BaseModel):
+    location: str = "Lucknow"
+    crop: str = "Wheat" # Wheat, Rice, Maize, Cotton, Sugarcane, Pulses
+    crop_stage: str = "Sowing" # Sowing, Vegetative, Flowering, Maturity, Harvesting
+    soil_type: Optional[str] = "Alluvial / Loam"
+    language: Optional[str] = "en"
+
+class FarmerAdvisoryResponse(BaseModel):
+    crop: str
+    crop_stage: str
+    location: str
+    suitability_score: float = Field(..., ge=0.0, le=100.0)
+    suitability_status: str # "OPTIMAL", "FAVORABLE", "CAUTION", "UNFAVORABLE"
+    weather_concern: str
+    irrigation_advice: str
+    sowing_or_harvest_precaution: str
+    heat_or_rain_stress_warning: str
+    recommendation: str
+    why_factors: List[str]
+    data_sources: List[str]
+    disclaimer: str = "AI-generated agricultural advisory — consult local Krishi Vigyan Kendra (KVK) for authoritative guidance."
+    current_season: Optional[str] = None
+    is_in_season: Optional[bool] = True
+    seasonal_crops_recommended: Optional[List[str]] = []
+    season_warning: Optional[str] = None
+
+class ChatRequest(BaseModel):
+    message: str
+    location: Optional[str] = "Nagpur"
+    language: Optional[str] = "en" # en, hi, mr, bn, ta, te, gu
+    persona: Optional[str] = "GENERAL" # FARMER, COMMUTER, EVENT_OUTDOOR, HEALTH_DAILY, GENERAL
+    crop: Optional[str] = None
+    crop_stage: Optional[str] = None
+
+class ChatResponse(BaseModel):
+    response: str
+    intent: str
+    extracted_location: str
+    language: str
+    persona: Optional[str] = "GENERAL"
+    risk_assessment: Optional[Dict[str, Any]] = None
+    sources: List[str]
+    confidence: float = 0.95
+    verdict: Optional[str] = None # "RECOMMENDED", "CAUTION", "NOT_RECOMMENDED", "INFO"
+    verdict_badge: Optional[str] = None # e.g. "🟢 RECOMMENDED", "🟡 CAUTION", "🔴 NOT RECOMMENDED"
+    use_case: Optional[str] = None # e.g. "LAUNDRY_DRYING", "CAR_WASH", "OUTDOOR_SPORTS", etc.
+    suitability_score: Optional[float] = None # 0 to 100
+    action_steps: Optional[List[str]] = None
+    weather_summary: Optional[Dict[str, Any]] = None
+    transcribed_text: Optional[str] = None
+    detected_language: Optional[str] = None
+    speech_text: Optional[str] = None
+    audio_url: Optional[str] = None
+
