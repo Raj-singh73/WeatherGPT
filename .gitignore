@@ -44,3 +44,6 @@ Thumbs.db
 *.db
 
 backend/data/registered_users_log.json
+
+database_table.html
+backend/data/registered_users.csv
