@@ -389,7 +389,7 @@ def get_current_weather(
                     risk_eval = {
                         "risk_score": 12.0 if precip_val < 0.1 else 28.0,
                         "risk_level": "LOW" if precip_val < 0.1 else "MODERATE",
-                        "confidence": 0.95,
+                        "confidence": 0.88,
                         "key_factors": ["All atmospheric parameters within normal seasonal thresholds"],
                         "recommendation": "Normal weather conditions. Ideal for regular outdoor activities.",
                         "soil_moisture": 42.0
@@ -412,7 +412,7 @@ def get_current_weather(
                     precipitation_intensity=precip_cat,
                     risk_score=risk_eval.get("risk_score", 12.0),
                     risk_level=risk_eval.get("risk_level", "LOW"),
-                    confidence=risk_eval.get("confidence", 0.95),
+                    confidence=risk_eval.get("confidence", 0.88),
                     key_factors=risk_eval.get("key_factors", []),
                     recommendation=risk_eval.get("recommendation", "Normal weather conditions."),
                     soil_moisture=risk_eval.get("soil_moisture", 42.0)
@@ -428,7 +428,7 @@ def get_current_weather(
                     current=metrics,
                     risk_score=risk_eval.get("risk_score", 12.0),
                     risk_level=risk_eval.get("risk_level", "LOW"),
-                    confidence=risk_eval.get("confidence", 0.95),
+                    confidence=risk_eval.get("confidence", 0.88),
                     key_factors=risk_eval.get("key_factors", []),
                     recommendation=risk_eval.get("recommendation", "Normal weather conditions.")
                 )
@@ -457,7 +457,7 @@ def get_current_weather(
         precipitation_intensity=fallback_cat,
         risk_score=10.5,
         risk_level="LOW",
-        confidence=0.96,
+        confidence=0.88,
         key_factors=["Station baseline within seasonal normal limits"],
         recommendation="Normal routine activities permitted.",
         soil_moisture=38.0
@@ -472,7 +472,7 @@ def get_current_weather(
         current=metrics,
         risk_score=10.5,
         risk_level="LOW",
-        confidence=0.96,
+        confidence=0.88,
         key_factors=["Station baseline within seasonal normal limits"],
         recommendation="Normal routine activities permitted."
     )
@@ -564,7 +564,7 @@ def get_forecast(
                         risk_assessment = {
                             "risk_score": 15.0,
                             "risk_level": "LOW",
-                            "confidence": 0.95,
+                            "confidence": 0.88,
                             "key_factors": ["Normal seasonal thresholds"],
                             "recommendation": "Normal weather conditions.",
                             "soil_moisture": 42.0
@@ -585,7 +585,7 @@ def get_forecast(
                         precipitation_probability_max=p_prob,
                         precipitation_hours=p_hrs,
                         precipitation_category=p_cat,
-                        confidence=risk_assessment.get("confidence", 0.95),
+                        confidence=risk_assessment.get("confidence", 0.88),
                         key_factors=risk_assessment.get("key_factors", []),
                         recommendation=risk_assessment.get("recommendation", "Normal weather conditions."),
                         soil_moisture=risk_assessment.get("soil_moisture", 42.0)
@@ -614,7 +614,7 @@ def get_forecast(
                 risk_assessment = {
                     "risk_score": 15.0,
                     "risk_level": "LOW",
-                    "confidence": 0.95,
+                    "confidence": 0.88,
                     "key_factors": ["Station baseline parameters normal"],
                     "recommendation": "Normal weather conditions.",
                     "soil_moisture": 42.0
@@ -635,7 +635,7 @@ def get_forecast(
                 precipitation_probability_max=p_prob,
                 precipitation_hours=round(p * 0.4, 1) if p > 0 else 0.0,
                 precipitation_category=get_precipitation_category(p, p_prob, weather_code=wc),
-                confidence=risk_assessment.get("confidence", 0.95),
+                confidence=risk_assessment.get("confidence", 0.88),
                 key_factors=risk_assessment.get("key_factors", []),
                 recommendation=risk_assessment.get("recommendation", "Normal weather conditions."),
                 soil_moisture=risk_assessment.get("soil_moisture", 42.0)

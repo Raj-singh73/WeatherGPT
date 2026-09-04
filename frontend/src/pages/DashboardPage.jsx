@@ -38,7 +38,7 @@ export default function DashboardPage({
       : (forecastDays[0]?.risk_score ?? 12.0);
 
   const liveRiskLevel = currentWeather?.risk_level || current?.risk_level || forecastDays[0]?.risk_level || 'LOW';
-  const liveConfidence = currentWeather?.confidence || current?.confidence || forecastDays[0]?.confidence || 0.96;
+  const liveConfidence = currentWeather?.confidence || current?.confidence || forecastDays[0]?.confidence || 0.88;
   const liveKeyFactors = (currentWeather?.key_factors && currentWeather.key_factors.length > 0)
     ? currentWeather.key_factors
     : (current?.key_factors && current.key_factors.length > 0)

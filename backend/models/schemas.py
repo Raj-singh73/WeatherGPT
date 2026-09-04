@@ -38,7 +38,7 @@ class CurrentWeatherMetrics(BaseModel):
     precipitation_intensity: Optional[str] = "No Rain"
     risk_score: Optional[float] = 12.0
     risk_level: Optional[str] = "LOW"
-    confidence: Optional[float] = 0.95
+    confidence: Optional[float] = 0.88
     key_factors: Optional[List[str]] = Field(default_factory=list)
     recommendation: Optional[str] = None
     soil_moisture: Optional[float] = 42.0
@@ -72,7 +72,7 @@ class DailyForecastItem(BaseModel):
     precipitation_probability_max: Optional[float] = 0.0
     precipitation_hours: Optional[float] = 0.0
     precipitation_category: Optional[str] = "No Rain"
-    confidence: Optional[float] = 0.95
+    confidence: Optional[float] = 0.88
     key_factors: Optional[List[str]] = Field(default_factory=list)
     recommendation: Optional[str] = None
     soil_moisture: Optional[float] = 42.0
