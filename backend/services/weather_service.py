@@ -279,8 +279,8 @@ def resolve_location(
     except Exception as eph:
         print(f"[WARN] Photon resolve_location notice for '{cleaned}': {eph}")
 
-    # 6. Check local pre-indexed locations
-    clean_search = re.sub(r'\(.*?\)', '', cleaned).replace(" district", "").strip()
+    # 6. Check local pre-indexed locations & pan-India district centroids
+    clean_search = re.sub(r'\(.*?\)', '', cleaned).replace(" district", "").replace(" District", "").strip()
     clean_lower = clean_search.lower()
     if clean_lower in settings.LOCATIONS:
         loc = settings.LOCATIONS[clean_lower]
@@ -289,6 +289,17 @@ def resolve_location(
     for key, loc in settings.LOCATIONS.items():
         if key in clean_lower or clean_lower in key:
             return loc["name"], loc["state"], loc["lat"], loc["lon"], loc["climatology"]
+
+    try:
+        from api.location import DISTRICT_CENTROIDS
+        if clean_lower in DISTRICT_CENTROIDS:
+            dc = DISTRICT_CENTROIDS[clean_lower]
+            return clean_search.title(), dc["state"], dc["lat"], dc["lon"], 12.5
+        for dk, dv in DISTRICT_CENTROIDS.items():
+            if dk in clean_lower or clean_lower in dk:
+                return clean_search.title(), dv["state"], dv["lat"], dv["lon"], 12.5
+    except Exception:
+        pass
 
     # 7. Query Open-Meteo Geocoding API with clean place name
     try:
@@ -308,9 +319,18 @@ def resolve_location(
     except Exception as e:
         print(f"[WARN] Live geocoding failed for '{clean_search}': {e}")
 
+    # 8. Check dynamic district centroid resolution before defaulting
+    try:
+        from api.location import resolve_district_centroid
+        d_res = resolve_district_centroid(clean_search)
+        if d_res and (abs(d_res[0] - 21.1458) > 0.0001 or abs(d_res[1] - 79.0882) > 0.0001 or "nagpur" in clean_lower):
+            return clean_search.title(), d_res[2], d_res[0], d_res[1], 12.5
+    except Exception:
+        pass
+
     # Fallback to default
     def_loc = settings.LOCATIONS["nagpur"]
-    return cleaned.title(), def_loc["state"], def_loc["lat"], def_loc["lon"], def_loc["climatology"]
+    return cleaned.title() if cleaned else def_loc["name"], def_loc["state"], def_loc["lat"], def_loc["lon"], def_loc["climatology"]
 
 def get_current_weather(
     location_query: str = "Nagpur",

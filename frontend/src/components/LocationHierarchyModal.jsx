@@ -114,19 +114,23 @@ export default function LocationHierarchyModal({
     api.getDistrictHierarchy(selectedDistrict, selectedState)
       .then(res => {
         if (isCancelled) return;
+        const dLat = res.lat != null ? res.lat : (res.villages?.[0]?.lat ?? 21.1458);
+        const dLon = res.lon != null ? res.lon : (res.villages?.[0]?.lon ?? 79.0882);
+
         const vList = res.villages && res.villages.length > 0 ? res.villages : [
-          { name: `${selectedDistrict} Sadar`, elevation: 240, type: 'District Center' },
-          { name: `${selectedDistrict} Rural`, elevation: 245, type: 'Village' }
+          { name: `${selectedDistrict} Sadar`, lat: dLat, lon: dLon, elevation: 240, type: 'District Center' },
+          { name: `${selectedDistrict} Rural`, lat: dLat, lon: dLon, elevation: 245, type: 'Village' }
         ];
         setDistrictVillages(vList);
         setSelectedVillage(vList[0]?.name || `${selectedDistrict} Sadar`);
-        if (vList[0]?.lat && vList[0]?.lon) {
-          setCustomCoordinates({
-            lat: vList[0].lat,
-            lon: vList[0].lon,
-            elevation: vList[0].elevation || 240
-          });
-        }
+        
+        const targetLat = vList[0]?.lat ?? dLat;
+        const targetLon = vList[0]?.lon ?? dLon;
+        setCustomCoordinates({
+          lat: targetLat,
+          lon: targetLon,
+          elevation: vList[0]?.elevation || 240
+        });
         setIsLoadingVillages(false);
       })
       .catch((err) => {
@@ -175,18 +179,57 @@ export default function LocationHierarchyModal({
   // Active village item for preview
   const activeVillageObject = useMemo(() => {
     const match = districtVillages.find(v => (v.name || v.village) === selectedVillage);
-    if (match) return match;
+    const chosenLat = match?.lat ?? customCoordinates?.lat ?? 21.1458;
+    const chosenLon = match?.lon ?? customCoordinates?.lon ?? 79.0882;
+    if (match) return { ...match, lat: chosenLat, lon: chosenLon };
     return {
       name: selectedVillage,
       village: selectedVillage,
       district: selectedDistrict,
       state: selectedState,
       subDistrict: selectedSubDistrict !== 'ALL' ? selectedSubDistrict : `${selectedDistrict} Tehsil`,
-      lat: customCoordinates?.lat || 21.1458,
-      lon: customCoordinates?.lon || 79.0882,
+      lat: chosenLat,
+      lon: chosenLon,
       elevation: customCoordinates?.elevation || 240
     };
   }, [districtVillages, selectedVillage, selectedDistrict, selectedState, selectedSubDistrict, customCoordinates]);
+
+  // Top Global Search form submit handler (handles instant Enter or click)
+  const handleTopSearchSubmit = async (e) => {
+    e?.preventDefault?.();
+    const q = searchQuery.trim();
+    if (!q) return;
+
+    if (suggestResults.length > 0) {
+      handleSelectExactLocation(suggestResults[0]);
+      setSearchQuery('');
+      return;
+    }
+
+    // Direct 6-digit PIN code entered in top search bar
+    if (/^[1-9][0-9]{5}$/.test(q)) {
+      try {
+        const pinRes = await api.lookupPincode(q);
+        if (pinRes?.results?.length > 0) {
+          handleSelectExactLocation(pinRes.results[0]);
+          setSearchQuery('');
+          return;
+        }
+      } catch (err) {
+        console.warn('Top search PIN lookup notice:', err);
+      }
+    }
+
+    try {
+      const results = await api.suggestLocations(q);
+      if (results?.length > 0) {
+        handleSelectExactLocation(results[0]);
+        setSearchQuery('');
+      }
+    } catch (err) {
+      console.warn('Top search submit notice:', err);
+    }
+  };
 
   // Top Global Autocomplete Search via Backend /api/location/suggest
   useEffect(() => {
@@ -446,6 +489,27 @@ export default function LocationHierarchyModal({
       return;
     }
 
+    // 2. If currently on PIN code tab, confirm active PIN or first resolved post office
+    if (activeTab === 'pincode') {
+      if (pincodeResults.length > 0) {
+        handleSelectExactLocation(pincodeResults[0]);
+        return;
+      }
+      const cleanPin = pincodeInput.trim();
+      if (/^[1-9][0-9]{5}$/.test(cleanPin)) {
+        setIsLookingUpPin(true);
+        api.lookupPincode(cleanPin)
+          .then(res => {
+            if (res?.results?.length > 0) {
+              handleSelectExactLocation(res.results[0]);
+            }
+          })
+          .catch(err => console.warn('Confirm pin error:', err))
+          .finally(() => setIsLookingUpPin(false));
+        return;
+      }
+    }
+
     const vObj = activeVillageObject;
     const villageName = vObj?.name || selectedVillage || `${selectedDistrict} Sadar`;
     const chosenLat = vObj?.lat ?? customCoordinates?.lat ?? 21.1458;
@@ -505,7 +569,7 @@ export default function LocationHierarchyModal({
 
         {/* Global Instant Search Bar with Live Suggestions */}
         <div className="p-4 border-b border-slate-200 bg-white relative">
-          <div className="relative">
+          <form onSubmit={handleTopSearchSubmit} className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
@@ -519,13 +583,14 @@ export default function LocationHierarchyModal({
             )}
             {searchQuery && !isSuggesting && (
               <button
+                type="button"
                 onClick={() => setSearchQuery('')}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
             )}
-          </div>
+          </form>
 
           {/* Autocomplete Suggestion Dropdown */}
           {suggestResults.length > 0 && (
@@ -831,8 +896,10 @@ export default function LocationHierarchyModal({
                             type="button"
                             onClick={() => {
                               setSelectedVillage(vName);
-                              if (v.lat && v.lon) {
-                                setCustomCoordinates({ lat: v.lat, lon: v.lon, elevation: v.elevation || 240 });
+                              const targetLat = v.lat ?? v.latitude ?? customCoordinates?.lat;
+                              const targetLon = v.lon ?? v.longitude ?? customCoordinates?.lon;
+                              if (targetLat != null && targetLon != null) {
+                                setCustomCoordinates({ lat: targetLat, lon: targetLon, elevation: v.elevation || 240 });
                               }
                             }}
                             className={`text-left p-2 rounded-lg border transition-all cursor-pointer flex items-center justify-between text-xs group ${
@@ -1059,6 +1126,12 @@ export default function LocationHierarchyModal({
                     maxLength={6}
                     value={pincodeInput}
                     onChange={(e) => handlePincodeSearch(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleConfirm();
+                      }
+                    }}
                     placeholder="e.g. 201206, 273001, 752001, 440001"
                     className="flex-1 bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 font-bold focus:outline-none focus:border-sky-500 shadow-xs"
                   />
