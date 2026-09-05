@@ -49,7 +49,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
           badge: 'bg-rose-600 text-white border-rose-700 shadow-sm',
           icon: AlertOctagon,
           iconColor: 'text-rose-600',
-          colorName: 'IMD RED WARNING (Take Immediate Action)',
+          colorName: t.redWarning || 'IMD RED WARNING (Take Immediate Action)',
           headerBg: 'bg-rose-100/80 text-rose-900 border-rose-200'
         };
       case 'ORANGE':
@@ -58,7 +58,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
           badge: 'bg-orange-600 text-white border-orange-700 shadow-sm',
           icon: AlertTriangle,
           iconColor: 'text-orange-600',
-          colorName: 'IMD ORANGE ALERT (Be Prepared)',
+          colorName: t.orangeAlert || 'IMD ORANGE ALERT (Be Prepared)',
           headerBg: 'bg-orange-100/80 text-orange-900 border-orange-200'
         };
       case 'YELLOW':
@@ -67,7 +67,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
           badge: 'bg-amber-500 text-white border-amber-600 shadow-sm',
           icon: Info,
           iconColor: 'text-amber-600',
-          colorName: 'IMD YELLOW WATCH (Be Updated)',
+          colorName: t.yellowWatch || 'IMD YELLOW WATCH (Be Updated)',
           headerBg: 'bg-amber-100/80 text-amber-900 border-amber-200'
         };
       default:
@@ -76,7 +76,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
           badge: 'bg-emerald-600 text-white border-emerald-700 shadow-sm',
           icon: CheckCircle2,
           iconColor: 'text-emerald-600',
-          colorName: 'IMD GREEN (No Emergency Warning)',
+          colorName: t.greenSafe || 'IMD GREEN (No Emergency Warning)',
           headerBg: 'bg-emerald-100/80 text-emerald-900 border-emerald-200'
         };
     }
@@ -95,7 +95,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
           <div>
             <div className="flex items-center space-x-2 text-xs font-extrabold text-rose-600 mb-1.5 uppercase tracking-wider">
               <ShieldAlert className="h-4 w-4" />
-              <span>Multi-Hazard Early Warning & Impact Engine</span>
+              <span>{t.earlyWarningEngine || 'Multi-Hazard Early Warning & Impact Engine'}</span>
             </div>
             
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
@@ -104,7 +104,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
             
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <span className="text-xs text-slate-600">
-                Location Focus: <strong className="text-slate-900">{location}</strong>
+                {t.locationFocus || 'Location Focus:'} <strong className="text-slate-900">{location}</strong>
               </span>
               <span className="text-slate-300">•</span>
               <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border ${
@@ -112,7 +112,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
                   ? 'bg-sky-100 text-sky-800 border-sky-300' 
                   : 'bg-amber-100 text-amber-800 border-amber-300'
               }`}>
-                {isCoastalBasin ? '🌊 Maritime Coastal Basin' : '🌾 Inland Continental Basin'}
+                {isCoastalBasin ? (t.coastalBasin || '🌊 Maritime Coastal Basin') : (t.inlandBasin || '🌾 Inland Continental Basin')}
               </span>
             </div>
           </div>
@@ -120,7 +120,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 self-start md:self-auto">
             <div className="px-3.5 py-2 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2 shadow-xs">
               <span className="h-2.5 w-2.5 rounded-full bg-rose-600 animate-ping"></span>
-              <span>{alerts.length} Active Hazard Advisories</span>
+              <span>{(t.activeAdvisories || '{count} Active Hazard Advisories').replace('{count}', alerts.length)}</span>
             </div>
           </div>
         </div>
@@ -131,12 +131,12 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
             <Compass className="h-5 w-5 text-sky-600 flex-shrink-0" />
             <div>
               <strong className="block text-slate-900 font-bold">
-                Geographical Basin: {primaryBasin}
+                {t.geoBasin || 'Geographical Basin:'} {primaryBasin}
               </strong>
               <p className="text-[11px] text-slate-500">
                 {isCoastalBasin 
-                  ? 'High vulnerability to Tropical Cyclones, High Wind Gales, Severe Sea Swells, and Tidal Surges.' 
-                  : 'Vulnerability centered on Heavy Precipitation, Flash Inundation, Damini Lightning, and Temperature Extremes.'}
+                  ? (t.coastalDesc || 'High vulnerability to Tropical Cyclones, High Wind Gales, Severe Sea Swells, and Tidal Surges.') 
+                  : (t.inlandDesc || 'Vulnerability centered on Heavy Precipitation, Flash Inundation, Damini Lightning, and Temperature Extremes.')}
               </p>
             </div>
           </div>
@@ -149,14 +149,14 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
         {/* Hazard Category Filter Chips */}
         <div className="flex flex-wrap items-center gap-2 mt-4 pt-3 border-t border-slate-100">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mr-1">
-            Filter Hazard:
+            {t.filterHazard || 'Filter Hazard:'}
           </span>
           {[
-            { id: 'ALL', label: 'All Hazards' },
-            { id: 'CYCLONE', label: '🌪️ Cyclones & Marine' },
-            { id: 'RAIN', label: '🌧️ Heavy Rain & Floods' },
-            { id: 'LIGHTNING', label: '⚡ Damini Lightning' },
-            { id: 'HEAT', label: '☀️ Thermal Extremes' }
+            { id: 'ALL', label: t.allHazards || 'All Hazards' },
+            { id: 'CYCLONE', label: t.cycloneHazard || '🌪️ Cyclones & Marine' },
+            { id: 'RAIN', label: t.rainHazard || '🌧️ Heavy Rain & Floods' },
+            { id: 'LIGHTNING', label: t.lightningHazard || '⚡ Damini Lightning' },
+            { id: 'HEAT', label: t.heatHazard || '☀️ Thermal Extremes' }
           ].map(cat => (
             <button
               key={cat.id}
@@ -178,25 +178,25 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
         {filteredAlerts.length > 0 ? (
           filteredAlerts.map((alert) => {
             const style = getSeverityStyle(alert.severity, alert.imd_color_code);
-            const Icon = style.icon;
+            const IconComponent = style.icon;
 
             return (
               <div 
                 key={alert.id}
-                className={`rounded-3xl p-6 border shadow-sm transition-all overflow-hidden ${style.card}`}
+                className={`border rounded-3xl p-6 transition-all shadow-sm ${style.card}`}
               >
                 {/* Alert Top Bar */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-200/80 mb-3.5">
-                  <div className="flex items-center space-x-2.5">
-                    <div className={`p-2 rounded-xl bg-white shadow-xs border border-slate-200 ${style.iconColor}`}>
-                      <Icon className="h-5 w-5" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-200/60">
+                  <div className="flex items-center space-x-3">
+                    <div className={`p-2.5 rounded-2xl bg-white shadow-xs ${style.iconColor}`}>
+                      <IconComponent className="h-6 w-6" />
                     </div>
                     <div>
-                      <h3 className="text-base sm:text-lg font-black text-slate-900 leading-snug">
+                      <h2 className="text-lg font-black text-slate-900 tracking-tight">
                         {alert.title}
-                      </h3>
-                      <span className="text-[10px] font-mono text-slate-500">
-                        Identifier: {alert.id} • {alert.hazard_category || 'METEOROLOGICAL'}
+                      </h2>
+                      <span className="text-xs font-bold text-slate-500">
+                        {style.colorName}
                       </span>
                     </div>
                   </div>
@@ -206,7 +206,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
                       {alert.severity} ({alert.imd_color_code || 'WATCH'})
                     </span>
                     <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-white text-slate-700 border border-slate-200">
-                      {alert.is_demo ? 'SIMULATED EARLY WARNING' : 'OFFICIAL'}
+                      {alert.is_demo ? (language === 'hi' ? 'एआई पूर्व चेतावनी (सिम्युलेटेड)' : 'SIMULATED EARLY WARNING') : 'OFFICIAL'}
                     </span>
                   </div>
                 </div>
@@ -219,17 +219,19 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
                   </span>
                   <span className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
                     <Clock className="h-3.5 w-3.5 text-slate-500" />
-                    Valid Through: <strong className="text-slate-900">{alert.valid_until}</strong>
+                    {language === 'hi' ? 'वैधता:' : 'Valid Through:'} <strong className="text-slate-900">{alert.valid_until}</strong>
                   </span>
                   <span className="text-slate-500 text-[11px]">
-                    Issued: {alert.issued_time}
+                    {language === 'hi' ? 'जारी:' : 'Issued:'} {alert.issued_time}
                   </span>
                 </div>
 
                 {/* Key Atmospheric Thresholds Strip */}
                 {alert.key_thresholds && alert.key_thresholds.length > 0 && (
                   <div className="mb-4 flex flex-wrap items-center gap-2">
-                    <span className="text-[10px] uppercase font-bold text-slate-400">Trigger Thresholds:</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-400">
+                      {language === 'hi' ? 'ट्रिगर पैरामीटर:' : 'Trigger Thresholds:'}
+                    </span>
                     {alert.key_thresholds.map((th, idx) => (
                       <span 
                         key={idx}
@@ -244,7 +246,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
                 {/* Technical Atmospheric Summary */}
                 <div className="bg-white/90 p-4 rounded-2xl border border-slate-200 mb-4 text-xs text-slate-800 leading-relaxed font-medium shadow-xs">
                   <strong className="block text-slate-900 font-extrabold text-[11px] uppercase tracking-wider mb-1 text-sky-900">
-                    Synoptic Assessment & Meteorological Drivers:
+                    {language === 'hi' ? 'मौसम विज्ञान विश्लेषण एवं चालक कारक:' : 'Synoptic Assessment & Meteorological Drivers:'}
                   </strong>
                   <p>{alert.summary}</p>
                 </div>
@@ -254,7 +256,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
                   <div className="bg-rose-50/90 border border-rose-200 rounded-2xl p-4 mb-4 shadow-xs">
                     <h4 className="font-black text-rose-950 text-xs uppercase tracking-wider mb-2.5 flex items-center gap-2">
                       <LifeBuoy className="h-4 w-4 text-rose-600" />
-                      <span>Life Survival Actionable Protocols (जीवन रक्षा दिशानिर्देश):</span>
+                      <span>{language === 'hi' ? 'जीवन रक्षा दिशानिर्देश (Life Survival Protocols):' : 'Life Survival Actionable Protocols:'}</span>
                     </h4>
                     <ul className="space-y-2 text-xs text-rose-900">
                       {alert.life_survival_protocols.map((protocol, pIdx) => (
@@ -271,7 +273,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
                 <div className="bg-white rounded-2xl p-4 border border-slate-200 text-xs shadow-xs mb-4">
                   <h4 className="font-extrabold text-sky-900 uppercase tracking-wider text-[11px] mb-1.5 flex items-center gap-1.5">
                     <CheckCircle2 className="h-4 w-4 text-sky-600" />
-                    <span>Livelihood, Commuter & Agricultural Protection:</span>
+                    <span>{t.actionTitle || (language === 'hi' ? 'नागरिक व आजीविका सुरक्षा निर्देश:' : 'Livelihood, Commuter & Agricultural Protection:')}</span>
                   </h4>
                   <p className="text-slate-700 leading-relaxed font-medium">
                     {alert.action_instructions}
@@ -283,7 +285,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
                   <div className="pt-3 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
                     <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
                       <PhoneCall className="h-3.5 w-3.5 text-rose-600" />
-                      Emergency Helplines:
+                      {language === 'hi' ? 'आपातकालीन हेल्पलाइन:' : 'Emergency Helplines:'}
                     </span>
                     <div className="flex flex-wrap gap-1.5">
                       {Object.entries(alert.emergency_contacts).map(([agency, number]) => (
@@ -299,19 +301,37 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
                     </div>
                   </div>
                 )}
-
               </div>
             );
           })
         ) : (
-          <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-slate-500 shadow-sm">
-            <CheckCircle2 className="h-10 w-10 text-emerald-600 mx-auto mb-3" />
-            <h3 className="text-base font-bold text-slate-900 mb-1">No Active Warnings in this Category</h3>
-            <p className="text-xs">Conditions in {location} remain within seasonal safety thresholds.</p>
+          /* Zero State / Safe Conditions */
+          <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center shadow-sm">
+            <div className="h-14 w-14 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="h-7 w-7" />
+            </div>
+            <h3 className="text-lg font-black text-slate-900">
+              {t.noAlertsTitle}
+            </h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto mt-1.5">
+              {t.noAlertsText} ({location})
+            </p>
           </div>
         )}
       </div>
 
+      {/* Statutory Demo Warning Footer */}
+      <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-4 flex items-start gap-3 text-xs text-amber-900 shadow-xs">
+        <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <strong className="font-extrabold uppercase tracking-wide block mb-0.5">
+            {t.disclaimerNotice}
+          </strong>
+          <p className="text-amber-800 leading-relaxed text-[11px]">
+            {t.disclaimerText}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

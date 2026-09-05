@@ -16,6 +16,7 @@ import { getTranslation } from '../translations';
 
 export default function FarmerPage({ defaultLocation = 'Lucknow', language = 'en' }) {
   const t = getTranslation(language).farmer;
+  const tc = getTranslation(language).common;
   const isHi = language === 'hi';
 
   // Current Agricultural Season Determination
@@ -23,11 +24,11 @@ export default function FarmerPage({ defaultLocation = 'Lucknow', language = 'en
   const isKharif = currentMonth >= 6 && currentMonth <= 10;
   const isRabi = currentMonth >= 11 || currentMonth <= 3;
   const currentSeasonCode = isKharif ? 'KHARIF' : (isRabi ? 'RABI' : 'ZAID');
-  const currentSeasonLabel = isKharif 
+  const currentSeasonLabel = tc?.seasons?.[currentSeasonCode] || (isKharif 
     ? (isHi ? 'खरीफ (मानसून ऋतु - सक्रिय)' : 'Kharif (Monsoon Season - Active)') 
     : (isRabi 
         ? (isHi ? 'रबी (शीतकालीन ऋतु - सक्रिय)' : 'Rabi (Winter Season - Active)') 
-        : (isHi ? 'जायद (ग्रीष्म ऋतु - सक्रिय)' : 'Zaid (Summer Season - Active)'));
+        : (isHi ? 'जायद (ग्रीष्म ऋतु - सक्रिय)' : 'Zaid (Summer Season - Active)')));
 
   // Default to an in-season crop so farmers see favorable crops immediately
   const defaultCrop = isKharif ? 'Rice' : 'Wheat';
@@ -46,14 +47,14 @@ export default function FarmerPage({ defaultLocation = 'Lucknow', language = 'en
   }, [defaultLocation]);
 
   const availableCrops = [
-    { id: 'Rice', label: 'Rice / Paddy (धान)', season: 'Kharif', seasonCodes: ['KHARIF', 'ZAID'] },
-    { id: 'Maize', label: 'Maize (मक्का)', season: 'Kharif / Rabi', seasonCodes: ['KHARIF', 'RABI', 'ZAID'] },
-    { id: 'Cotton', label: 'Cotton (कपास)', season: 'Kharif', seasonCodes: ['KHARIF'] },
-    { id: 'Sugarcane', label: 'Sugarcane (गन्ना)', season: 'Perennial', seasonCodes: ['KHARIF', 'RABI', 'ZAID', 'PERENNIAL'] },
-    { id: 'Pulses', label: 'Pulses / Gram (दलहन)', season: 'Kharif / Rabi', seasonCodes: ['KHARIF', 'RABI', 'ZAID'] },
-    { id: 'Wheat', label: 'Wheat (गेहूं)', season: 'Rabi', seasonCodes: ['RABI'] },
-    { id: 'Mustard', label: 'Mustard (सरसों)', season: 'Rabi', seasonCodes: ['RABI'] },
-    { id: 'Potato', label: 'Potato (आलू)', season: 'Rabi', seasonCodes: ['RABI'] }
+    { id: 'Rice', label: tc?.crops?.Rice || 'Rice / Paddy (धान)', season: 'Kharif', seasonCodes: ['KHARIF', 'ZAID'] },
+    { id: 'Maize', label: tc?.crops?.Maize || 'Maize (मक्का)', season: 'Kharif / Rabi', seasonCodes: ['KHARIF', 'RABI', 'ZAID'] },
+    { id: 'Cotton', label: tc?.crops?.Cotton || 'Cotton (कपास)', season: 'Kharif', seasonCodes: ['KHARIF'] },
+    { id: 'Sugarcane', label: tc?.crops?.Sugarcane || 'Sugarcane (गन्ना)', season: 'Perennial', seasonCodes: ['KHARIF', 'RABI', 'ZAID', 'PERENNIAL'] },
+    { id: 'Pulses', label: tc?.crops?.Pulses || 'Pulses / Gram (दलहन)', season: 'Kharif / Rabi', seasonCodes: ['KHARIF', 'RABI', 'ZAID'] },
+    { id: 'Wheat', label: tc?.crops?.Wheat || 'Wheat (गेहूं)', season: 'Rabi', seasonCodes: ['RABI'] },
+    { id: 'Mustard', label: tc?.crops?.Mustard || 'Mustard (सरसों)', season: 'Rabi', seasonCodes: ['RABI'] },
+    { id: 'Potato', label: tc?.crops?.Potato || 'Potato (आलू)', season: 'Rabi', seasonCodes: ['RABI'] }
   ];
 
   const inSeasonCrops = availableCrops.filter(c => c.seasonCodes.includes(currentSeasonCode) || c.seasonCodes.includes('PERENNIAL'));
@@ -66,6 +67,14 @@ export default function FarmerPage({ defaultLocation = 'Lucknow', language = 'en
     'Maturity',
     'Harvesting'
   ];
+
+  const getStageDisplay = (s) => {
+    return tc?.stages?.[s] || `${s} Phase`;
+  };
+
+  const getCropDisplay = (cropId) => {
+    return tc?.crops?.[cropId] || cropId;
+  };
 
   const fetchAdvisory = async () => {
     const cleanLoc = location.replace(/\(([^)]+)\)\s*\(\1\)/g, '($1)').trim();
@@ -99,31 +108,32 @@ export default function FarmerPage({ defaultLocation = 'Lucknow', language = 'en
           badge: 'bg-emerald-100 text-emerald-800 border-emerald-300',
           border: 'border-emerald-200'
         };
-      case 'FAVORABLE':
-        return {
-          color: 'text-sky-700',
-          bg: 'bg-sky-50',
-          badge: 'bg-sky-100 text-sky-800 border-sky-300',
-          border: 'border-sky-200'
-        };
-      case 'CAUTION':
+      case 'MODERATE':
         return {
           color: 'text-amber-700',
           bg: 'bg-amber-50',
           badge: 'bg-amber-100 text-amber-800 border-amber-300',
           border: 'border-amber-200'
         };
-      default:
+      case 'OFF_SEASON':
+      case 'RISK':
         return {
           color: 'text-rose-700',
           bg: 'bg-rose-50',
           badge: 'bg-rose-100 text-rose-800 border-rose-300',
           border: 'border-rose-200'
         };
+      default:
+        return {
+          color: 'text-sky-700',
+          bg: 'bg-sky-50',
+          badge: 'bg-sky-100 text-sky-800 border-sky-300',
+          border: 'border-sky-200'
+        };
     }
   };
 
-  const theme = getStatusTheme(advisory?.suitability_status || 'FAVORABLE');
+  const theme = getStatusTheme(advisory?.suitability_status);
 
   return (
     <div className="space-y-6 pb-12">
@@ -145,7 +155,7 @@ export default function FarmerPage({ defaultLocation = 'Lucknow', language = 'en
             <div className="flex flex-wrap items-center gap-2 mt-3 pt-2.5 border-t border-emerald-100/60">
               <span className="px-3 py-1 rounded-full bg-emerald-100/90 border border-emerald-300 text-emerald-800 text-[11px] font-extrabold flex items-center gap-1.5 shadow-xs">
                 <span>🌾 {isHi ? 'सक्रिय कृषि ऋतु:' : 'Active Agro-Season:'}</span>
-                <span className="text-emerald-950">{advisory?.current_season || currentSeasonLabel}</span>
+                <span className="text-emerald-950">{currentSeasonLabel}</span>
               </span>
               <span className="text-[11px] text-slate-500 font-medium">
                 {isHi 
@@ -188,7 +198,7 @@ export default function FarmerPage({ defaultLocation = 'Lucknow', language = 'en
                 {t.cropLabel}
               </label>
               <span className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded ${inSeasonCrops.some(c => c.id === crop) ? 'text-emerald-700 bg-emerald-50' : 'text-amber-700 bg-amber-50'}`}>
-                {inSeasonCrops.some(c => c.id === crop) ? 'In-Season' : 'Off-Season'}
+                {inSeasonCrops.some(c => c.id === crop) ? (tc?.inSeason || 'In-Season') : (tc?.offSeason || 'Off-Season')}
               </span>
             </div>
             <select
@@ -196,17 +206,17 @@ export default function FarmerPage({ defaultLocation = 'Lucknow', language = 'en
               onChange={(e) => setCrop(e.target.value)}
               className="bg-transparent text-xs text-slate-900 font-bold focus:outline-none w-full cursor-pointer"
             >
-              <optgroup label={isHi ? `✅ इस मौसम की फसलें (${currentSeasonCode})` : `✅ In-Season Crops (${currentSeasonCode})`}>
+              <optgroup label={`✅ ${tc?.inSeason || 'In-Season'} (${currentSeasonCode})`}>
                 {inSeasonCrops.map((c) => (
                   <option key={c.id} value={c.id} className="bg-white text-slate-900 font-semibold">
                     {c.label} • {c.season}
                   </option>
                 ))}
               </optgroup>
-              <optgroup label={isHi ? `⏳ बेमौसम फसलें (विपरीत ऋतु)` : `⏳ Off-Season Crops (Different Season)`}>
+              <optgroup label={`⏳ ${tc?.offSeason || 'Off-Season'}`}>
                 {offSeasonCrops.map((c) => (
                   <option key={c.id} value={c.id} className="bg-slate-50 text-slate-600">
-                    {c.label} • {c.season} ({isHi ? 'बेमौसम' : 'Off-Season'})
+                    {c.label} • {c.season} ({tc?.offSeason || 'Off-Season'})
                   </option>
                 ))}
               </optgroup>
@@ -225,7 +235,7 @@ export default function FarmerPage({ defaultLocation = 'Lucknow', language = 'en
             >
               {cropStages.map((s) => (
                 <option key={s} value={s} className="bg-white text-slate-900">
-                  {s} Phase
+                  {getStageDisplay(s)}
                 </option>
               ))}
             </select>
@@ -262,21 +272,21 @@ export default function FarmerPage({ defaultLocation = 'Lucknow', language = 'en
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 border border-amber-300">
-                    {isHi ? 'बेमौसम फसल चयन' : 'Off-Season Selection'}
+                    {tc?.offSeason || 'Off-Season Selection'}
                   </span>
                   <span className="text-xs font-bold text-amber-900">
-                    {advisory.crop} ≠ {advisory.current_season || currentSeasonLabel}
+                    {getCropDisplay(advisory.crop)} ≠ {currentSeasonLabel}
                   </span>
                 </div>
                 <p className="text-xs text-amber-900 font-semibold mt-1 leading-relaxed">
                   {advisory.season_warning || (isHi 
-                    ? `एक मौसम में केवल उसी ऋतु की फसल ही सफल होती है। ${advisory.crop} को इस मौसम में बोने से नुकसान होगा।` 
-                    : `In a single season, only crops matching the active season will grow. Sowing ${advisory.crop} out of season leads to failure.`)}
+                    ? `एक मौसम में केवल उसी ऋतु की फसल ही सफल होती है। ${getCropDisplay(advisory.crop)} को इस मौसम में बोने से नुकसान होगा।` 
+                    : `In a single season, only crops matching the active season will grow. Sowing ${getCropDisplay(advisory.crop)} out of season leads to failure.`)}
                 </p>
                 <p className="text-[11px] text-amber-800 font-medium mt-1">
                   {isHi ? 'वर्तमान मौसम की अनुशंसित फसलें:' : 'Recommended Favorable Crops for this Season:'}{' '}
                   <strong className="text-emerald-800 font-bold">
-                    {advisory.seasonal_crops_recommended?.join(', ') || inSeasonCrops.map(c => c.id).join(', ')}
+                    {advisory.seasonal_crops_recommended?.map(c => getCropDisplay(c)).join(', ') || inSeasonCrops.map(c => c.label).join(', ')}
                   </strong>
                 </p>
               </div>
@@ -285,7 +295,7 @@ export default function FarmerPage({ defaultLocation = 'Lucknow', language = 'en
               onClick={() => setCrop(inSeasonCrops[0]?.id || 'Rice')}
               className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold transition-all shadow-sm flex-shrink-0 cursor-pointer self-start sm:self-center flex items-center gap-1.5"
             >
-              <span>{isHi ? `अनुकूल फसल चुनें (${inSeasonCrops[0]?.label || 'धान'})` : `Switch to In-Season (${inSeasonCrops[0]?.id || 'Rice'})`}</span>
+              <span>{isHi ? `अनुकूल फसल चुनें (${inSeasonCrops[0]?.label || 'धान'})` : `Switch to In-Season (${inSeasonCrops[0]?.label || 'Rice'})`}</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -305,7 +315,7 @@ export default function FarmerPage({ defaultLocation = 'Lucknow', language = 'en
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{t.weatherMatch}</span>
               <h3 className="text-sm font-extrabold text-slate-900 mt-1">
-                {advisory.crop?.toUpperCase()} {t.suitabilityTitle}
+                {getCropDisplay(advisory.crop)?.toUpperCase()} {t.suitabilityTitle}
               </h3>
 
               <div className="my-5 flex items-baseline space-x-2">
@@ -323,7 +333,7 @@ export default function FarmerPage({ defaultLocation = 'Lucknow', language = 'en
 
               <div className="space-y-2 text-xs text-slate-700 mt-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
                 <p><strong>{t.primaryConcern}</strong> <span className="text-slate-900 font-semibold">{advisory.weather_concern}</span></p>
-                <p><strong>{t.targetStage}</strong> <span className="text-slate-900 font-semibold">{advisory.crop_stage}</span></p>
+                <p><strong>{t.targetStage}</strong> <span className="text-slate-900 font-semibold">{getStageDisplay(advisory.crop_stage)}</span></p>
                 <p><strong>{t.location}</strong> <span className="text-slate-900 font-semibold">{advisory.location}</span></p>
               </div>
             </div>
@@ -432,7 +442,7 @@ export default function FarmerPage({ defaultLocation = 'Lucknow', language = 'en
           {/* Kharif Card */}
           <div className={`p-4 rounded-2xl border transition-all ${currentSeasonCode === 'KHARIF' ? 'bg-emerald-50/80 border-emerald-300 ring-2 ring-emerald-500/20 shadow-xs' : 'bg-slate-50/70 border-slate-200'}`}>
             <div className="flex items-center justify-between mb-1">
-              <span className="font-extrabold text-slate-900 text-sm">🌧️ {isHi ? 'खरीफ (मानसून)' : 'Kharif (Monsoon)'}</span>
+              <span className="font-extrabold text-slate-900 text-sm">🌧️ {tc?.seasons?.KHARIF || (isHi ? 'खरीफ (मानसून)' : 'Kharif (Monsoon)')}</span>
               {currentSeasonCode === 'KHARIF' && (
                 <span className="text-[9px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
                   {isHi ? 'सक्रिय ऋतु' : 'Active Now'}
@@ -446,7 +456,7 @@ export default function FarmerPage({ defaultLocation = 'Lucknow', language = 'en
                 Rice / Paddy (धान), Maize (मक्का), Cotton (कपास), Sugarcane (गन्ना), Kharif Pulses (अरहर)
               </p>
               <p className="text-[11px] text-rose-700 pt-1">
-                ⛔ <strong>{isHi ? 'बेमौसम:' : 'Off-Season:'}</strong> {isHi ? 'गेहूं, सरसों, आलू (अभी न बोएं)' : 'Wheat, Mustard, Potato (Do NOT sow now)'}
+                ⛔ <strong>{tc?.offSeason || 'Off-Season:'}</strong> {isHi ? 'गेहूं, सरसों, आलू (अभी न बोएं)' : 'Wheat, Mustard, Potato (Do NOT sow now)'}
               </p>
             </div>
           </div>
@@ -454,7 +464,7 @@ export default function FarmerPage({ defaultLocation = 'Lucknow', language = 'en
           {/* Rabi Card */}
           <div className={`p-4 rounded-2xl border transition-all ${currentSeasonCode === 'RABI' ? 'bg-emerald-50/80 border-emerald-300 ring-2 ring-emerald-500/20 shadow-xs' : 'bg-slate-50/70 border-slate-200'}`}>
             <div className="flex items-center justify-between mb-1">
-              <span className="font-extrabold text-slate-900 text-sm">❄️ {isHi ? 'रबी (शीतकाल)' : 'Rabi (Winter)'}</span>
+              <span className="font-extrabold text-slate-900 text-sm">❄️ {tc?.seasons?.RABI || (isHi ? 'रबी (शीतकाल)' : 'Rabi (Winter)')}</span>
               {currentSeasonCode === 'RABI' && (
                 <span className="text-[9px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
                   {isHi ? 'सक्रिय ऋतु' : 'Active Now'}
@@ -468,7 +478,7 @@ export default function FarmerPage({ defaultLocation = 'Lucknow', language = 'en
                 Wheat (गेहूं), Mustard (सरसों), Potato (आलू), Gram / Chana (चना), Peas (मटर)
               </p>
               <p className="text-[11px] text-rose-700 pt-1">
-                ⛔ <strong>{isHi ? 'बेमौसम:' : 'Off-Season:'}</strong> {isHi ? 'धान (चावल), कपास' : 'Rice / Paddy, Cotton'}
+                ⛔ <strong>{tc?.offSeason || 'Off-Season:'}</strong> {isHi ? 'धान (चावल), कपास' : 'Rice / Paddy, Cotton'}
               </p>
             </div>
           </div>
@@ -476,7 +486,7 @@ export default function FarmerPage({ defaultLocation = 'Lucknow', language = 'en
           {/* Zaid Card */}
           <div className={`p-4 rounded-2xl border transition-all ${currentSeasonCode === 'ZAID' ? 'bg-emerald-50/80 border-emerald-300 ring-2 ring-emerald-500/20 shadow-xs' : 'bg-slate-50/70 border-slate-200'}`}>
             <div className="flex items-center justify-between mb-1">
-              <span className="font-extrabold text-slate-900 text-sm">☀️ {isHi ? 'जायद (ग्रीष्म)' : 'Zaid (Summer)'}</span>
+              <span className="font-extrabold text-slate-900 text-sm">☀️ {tc?.seasons?.ZAID || (isHi ? 'जायद (ग्रीष्म)' : 'Zaid (Summer)')}</span>
               {currentSeasonCode === 'ZAID' && (
                 <span className="text-[9px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
                   {isHi ? 'सक्रिय ऋतु' : 'Active Now'}
@@ -490,7 +500,7 @@ export default function FarmerPage({ defaultLocation = 'Lucknow', language = 'en
                 Moong (मूंग), Urad (उड़द), Watermelon (तरबूज), Cucumber (खीरा), Fodder Maize
               </p>
               <p className="text-[11px] text-rose-700 pt-1">
-                ⛔ <strong>{isHi ? 'बेमौसम:' : 'Off-Season:'}</strong> {isHi ? 'गेहूं (कटाई पूर्ण), मुख्य धान' : 'Wheat (Harvested), Main Rice'}
+                ⛔ <strong>{tc?.offSeason || 'Off-Season:'}</strong> {isHi ? 'गेहूं (कटाई पूर्ण), मुख्य धान' : 'Wheat (Harvested), Main Rice'}
               </p>
             </div>
           </div>

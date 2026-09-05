@@ -41,8 +41,14 @@ export default function ChatPage({
         return `नमस्ते! मैं **WeatherGPT** हूँ — आपका AI मौसम व बहु-आपदा जोखिम विश्लेषक।\n\nमैं **${loc}** और पूरे भारत के लिए वास्तविक समय पूर्वानुमान, वर्षा जोखिम, आंधी-तूफान चेतावनी, खेल, फसल परामर्श और सुरक्षित यात्रा का सटीक विश्लेषण प्रदान करता हूँ।\n\nनीचे दिए गए किसी भी विषय पर क्लिक करें या अपना प्रश्न पूछें!`;
       case 'mr':
         return `नमस्कार! मी **WeatherGPT** आहे, आपला एआई हवामान व व्यावहारिक निर्णय सहाय्यक.\n\nमी **${loc}** साठी थेट हवामान अंदाज, पावसाचा धोका, वादळ चेतावणी आणि शेती व प्रवास मार्गदर्शन करतो. मी कशी मदत करू?`;
+      case 'bn':
+        return `নমস্কার! আমি **WeatherGPT** — আপনার এআই আবহাওয়া ও দুর্যোগ পূর্বাভাস সহকারী।\n\nআমি **${loc}** ও সমগ্র ভারতের লাইভ পূর্বাভাস, বৃষ্টির সম্ভাবনা, ঝড় সতর্কতা, কৃষিকাজ ও নিরাপদ ভ্রমণের পরামর্শ প্রদান করি। আপনি কী জানতে চান?`;
       case 'ta':
         return `வணக்கம்! நான் **WeatherGPT** — உங்கள் செயற்கை நுண்ணறிவு வானிலை மற்றும் நடைமுறை முடிவெடுக்கும் உதவியாளர்.\n\nநான் **${loc}** பகுதிக்கான மழை வாய்ப்பு, புயல் எச்சரிக்கை, விவசாய வழிகாட்டுதல் மற்றும் பயண பாதுகாப்பை வழங்க முடியும். உங்களுக்கு என்ன தகவல் வேண்டும்?`;
+      case 'te':
+        return `నమస్కారం! నేను **WeatherGPT** — మీ రియల్ టైమ్ వాతావరణ మరియు విపత్తు నిర్ణయ సహాయకుడిని.\n\nనేను **${loc}** కోసం వర్ష సూచన, తుఫాను హెచ్చరికలు మరియు పంట సలహాలను అందిస్తాను. మీకు ఏ సమాచారం కావాలి?`;
+      case 'gu':
+        return `નમસ્તે! હું **WeatherGPT** છું — તમારો એઆઈ હવામાન અને આપત્તિ જોખમ સહાયક.\n\nહું **${loc}** માટે વાસ્તવિક સમયની આગાહી, વરસાદનું જોખમ, વાવાઝોડાની ચેતવણી અને ખેતી અંગે માર્ગદર્શન આપું છું. નીચે આપેલા વિષયોમાંથી પસંદ કરો અથવા સવાલ પૂછો!`;
       default:
         return `Hello! I am **WeatherGPT** — your AI assistant for real-time weather intelligence and multi-hazard risk analysis.\n\nI analyze physics telemetry, satellite hydrological archives, and ML impact models for **${loc}** to give you direct, calibrated answers: rain probability, thunderstorm alerts, outdoor sports suitability, crop advisories, and highway transit safety.\n\nTap any category below or ask your question!`;
     }
@@ -309,57 +315,201 @@ export default function ChatPage({
 
   // Interactive Categorized Prompt Presets
   const promptCategories = [
-    { id: 'ALL', label: language === 'hi' ? '🔥 प्रमुख प्रश्न' : '🔥 Top Queries' },
-    { id: 'RAIN', label: language === 'hi' ? '🌧️ वर्षा व छाता' : '🌧️ Rain & Storm' },
-    { id: 'SPORTS', label: language === 'hi' ? '🏏 खेल व आउटडोर' : '🏏 Sports' },
-    { id: 'FARM', label: language === 'hi' ? '🌾 फसल व कृषि' : '🌾 Farming' },
-    { id: 'HEAT_COLD', label: language === 'hi' ? '☀️ गर्मी व स्वास्थ्य' : '☀️ Heat & Health' },
-    { id: 'PAINT', label: language === 'hi' ? '🎨 निर्माण व पुताई' : '🎨 Construction' },
-    { id: 'DRIVE', label: language === 'hi' ? '🌫️ कोहरा व यात्रा' : '🌫️ Highway Fog' },
-    { id: 'FORECAST', label: language === 'hi' ? '📅 4-दिवसीय मौसम' : '📅 Outlook' },
+    { id: 'ALL', label: language === 'hi' ? '✨ सभी सुझाव' : (language === 'mr' ? '✨ सर्व प्रश्न' : (language === 'bn' ? '✨ সব প্রশ্ন' : (language === 'gu' ? '✨ બધા પ્રશ્નો' : (language === 'ta' ? '✨ அனைத்தும்' : (language === 'te' ? '✨ అన్ని ప్రశ్నలు' : '✨ All Suggestions'))))) },
+    { id: 'RAIN', label: language === 'hi' ? '🌧️ वर्षा व छाता' : (language === 'mr' ? '🌧️ पाऊस व छत्री' : (language === 'bn' ? '🌧️ বৃষ্টি ও ছাতা' : (language === 'gu' ? '🌧️ વરસાદ અને છત્રી' : (language === 'ta' ? '🌧️ மழை & குடை' : (language === 'te' ? '🌧️ వర్షం & గొడుగు' : '🌧️ Rain & Storm'))))) },
+    { id: 'SPORTS', label: language === 'hi' ? '🏏 खेल व आउटडोर' : (language === 'mr' ? '🏏 खेळ व धावणे' : (language === 'bn' ? '🏏 খেলাধুলা' : (language === 'gu' ? '🏏 રમતગમત' : (language === 'ta' ? '🏏 விளையாட்டுகள்' : (language === 'te' ? '🏏 ఆటలు & పరుగు' : '🏏 Sports'))))) },
+    { id: 'FARM', label: language === 'hi' ? '🌾 फसल व कृषि' : (language === 'mr' ? '🌾 शेती व पिके' : (language === 'bn' ? '🌾 কৃষি ও ফসল' : (language === 'gu' ? '🌾 ખેતી અને પાક' : (language === 'ta' ? '🌾 விவசாயம்' : (language === 'te' ? '🌾 వ్యవసాయం' : '🌾 Farming'))))) },
+    { id: 'HEAT_COLD', label: language === 'hi' ? '☀️ गर्मी व स्वास्थ्य' : (language === 'mr' ? '☀️ उष्णता व आरोग्य' : (language === 'bn' ? '☀️ তাপপ্রবাহ ও স্বাস্থ্য' : (language === 'gu' ? '☀️ ગરમી અને સ્વાસ્થ્ય' : (language === 'ta' ? '☀️ வெப்பம் & நலம்' : (language === 'te' ? '☀️ వేడి & ఆరోగ్యం' : '☀️ Heat & Health'))))) },
+    { id: 'PAINT', label: language === 'hi' ? '🎨 निर्माण व पुताई' : (language === 'mr' ? '🎨 बांधकाम व रंगकाम' : (language === 'bn' ? '🎨 রঙ ও নির্মাণ' : (language === 'gu' ? '🎨 બાંધકામ અને રંગકામ' : (language === 'ta' ? '🎨 கட்டுமானம்' : (language === 'te' ? '🎨 నిర్మాణం & పెయింట్' : '🎨 Construction'))))) },
+    { id: 'DRIVE', label: language === 'hi' ? '🌫️ कोहरा व यात्रा' : (language === 'mr' ? '🌫️ धुके व प्रवास' : (language === 'bn' ? '🌫️ কুয়াশা ও ভ্রমণ' : (language === 'gu' ? '🌫️ ધુમ્મસ અને મુસાફરી' : (language === 'ta' ? '🌫️ மூடுபனி & பயணம்' : (language === 'te' ? '🌫️ పొగమంచు & ప్రయాణం' : '🌫️ Highway Fog'))))) },
+    { id: 'FORECAST', label: language === 'hi' ? '📅 4-दिवसीय मौसम' : (language === 'mr' ? '📅 ४ दिवसांचा अंदाज' : (language === 'bn' ? '📅 ৪ দিনের পূর্বাভাস' : (language === 'gu' ? '📅 ૪ દિવસની આગાહી' : (language === 'ta' ? '📅 4 நாள் வானிலை' : (language === 'te' ? '📅 4 రోజుల సూచన' : '📅 Outlook'))))) },
   ];
 
   const getPromptsForCategory = (catId, personaId, lang, loc) => {
-    const isHi = lang === 'hi';
+    // Multilingual prompt bank
+    if (lang === 'mr') {
+      if (catId === 'ALL') {
+        if (personaId === 'FARMER') return [`या हंगामात कोणती पिके घेणे फायदेशीर आहे?`, `उद्या ${loc} मध्ये पेरणी करू शकतो का?`, `उद्या पिकावर औषध फवारणी करावी का?`, `आज शेताला पाणी द्यावे का?`];
+        return [`आज किंवा उद्या ${loc} मध्ये पाऊस पडेल का?`, `वादळाचा काही इशारा आहे का?`, `आज बाहेर जाताना छत्री सोबत ठेवावी का?`, `पुढील ४ दिवसांचे हवामान कसे राहील?`];
+      }
+      if (catId === 'RAIN') return [`आज किंवा उद्या ${loc} मध्ये पाऊस पडेल का? किती टक्के शक्यता आहे?`, `आज छत्री सोबत ठेवावी का?`, `पुढील ४८ तासांत मुसळधार पावसाचा इशारा आहे का?`];
+      if (catId === 'HEAT_COLD') return [`दुपारी उष्णतेचा काय परिणाम राहील?`, `सकाळी धावण्यासाठी तापमान केव्हा अनुकूल राहील?`];
+      if (catId === 'SPORTS') return [`उद्या ${loc} मध्ये क्रिकेट खेळू शकतो का?`, `सकाळी फिरायला जाण्यासाठी उत्तम वेळ कोणती?`];
+      if (catId === 'FARM') return [`उद्या पिकांची कापणी करावी का?`, `कीटकनाशक फवारणी सुरक्षित आहे का?`, `आज पिकाला पाणी द्यावे का?`];
+      if (catId === 'PAINT') return [`उद्या बाहेरील भिंतींना रंग देऊ शकतो का?`, `आज स्लॅबचे काम करणे सुरक्षित आहे का?`];
+      if (catId === 'DRIVE') return [`उद्या सकाळी महामार्गावर धुके असेल का?`, `बाईक चालवणे सुरक्षित आहे का?`];
+      if (catId === 'FORECAST') return [`${loc} चा ४ दिवसांचा हवामान अंदाज दाखवा`, `उद्या पावसाची नेमकी शक्यता किती?`];
+    } else if (lang === 'bn') {
+      if (catId === 'ALL') {
+        if (personaId === 'FARMER') return [`এই মরশুমে কোন ফসল সবচেয়ে উপযুক্ত?`, `কাল কি ${loc} এ ধান বোনা যাবে?`, `আজ কি জমিতে সেচ দেওয়া উচিত?`, `কাল কি কীটনাশক স্প্রে করা নিরাপদ?`];
+        return [`আজ বা কাল কি ${loc} এ বৃষ্টি হবে?`, `কোনো ঝড় বা বজ্রপাতের সতর্কতা আছে কি?`, `আজ কি ছাতা সাথে রাখা দরকার?`, `আগামী ৪ দিনের আবহাওয়া কেমন থাকবে?`];
+      }
+      if (catId === 'RAIN') return [`আজ বা কাল ${loc} এ বৃষ্টির সম্ভাবনা কত?`, `আজ কি ছাতা নিয়ে বেরোনো দরকার?`, `আগামী ৪৮ ঘণ্টায় ভারী বৃষ্টির সম্ভাবনা আছে কি?`];
+      if (catId === 'HEAT_COLD') return [`দুপুরে তাপপ্রবাহের মাত্রা কেমন থাকবে?`, `সকালে হাঁটার জন্য আবহাওয়া কেমন?`];
+      if (catId === 'SPORTS') return [`কাল কি ক্রিকেট বা ফুটবল খেলা যাবে?`, `সকালে দৌড়ানোর সেরা সময় কোনটি?`];
+      if (catId === 'FARM') return [`কাল কি ফসল কাটা ঠিক হবে?`, `আজ কি জমিতে জল দেওয়া উচিত?`];
+      if (catId === 'DRIVE') return [`কাল সকালে হাইওয়েতে কি কুয়াশা থাকবে?`, `বাইকে ভ্রমণ কি নিরাপদ?`];
+      if (catId === 'FORECAST') return [`${loc} এর ৪ দিনের পূর্বাভাস দেখান`, `কাল বৃষ্টির সঠিক সম্ভাবনা কত?`];
+    } else if (lang === 'gu') {
+      if (catId === 'ALL') {
+        if (personaId === 'FARMER') return [`આ સિઝનમાં કયો પાક લેવો સૌથી સારો?`, `શું કાલે ${loc} માં વાવણી કરી શકાય?`, `શું આજે પાકને પિયત આપવું જોઈએ?`];
+        return [`શું આજે કે કાલે ${loc} માં વરસાદ પડશે?`, `વાવાઝોડા કે ભારે પવનની કોઈ ચેતવણી છે?`, `શું આજે છત્રી સાથે રાખવાની જરૂર છે?`, `આવનારા ૪ દિવસનું હવામાન કેવું રહેશે?`];
+      }
+      if (catId === 'RAIN') return [`આજે કે કાલે ${loc} માં વરસાદની કેટલી શક્યતા છે?`, `શું આજે છત્રી સાથે રાખવી જરૂરી છે?`];
+      if (catId === 'FARM') return [`શું કાલે પાકની કાપણી કરી શકાય?`, `શું કાલે જંતુનાશક દવા છાંટવી સલામત છે?`];
+      if (catId === 'DRIVE') return [`શું કાલે સવારે હાઇવે પર ધુમ્મસ રહેશે?`, `શું મુસાફરી સલામત છે?`];
+      if (catId === 'FORECAST') return [`${loc} ની ૪ દિવસની હવામાન આગાહી બતાવો`, `કાલે વરસાદની શક્યતા કેટલી?`];
+    } else if (lang === 'ta') {
+      if (catId === 'ALL') {
+        if (personaId === 'FARMER') return [`இந்த பருவத்தில் எந்த பயிர் நடவு செய்வது நல்லது?`, `இன்று பயிருக்கு நீர் பாய்ச்சலாமா?`, `நாளை பூச்சிக்கொல்லி தெளிக்கலாமா?`];
+        return [`இன்று அல்லது நாளை ${loc} பகுதியில் மழை பெய்யுமா?`, `ஏதேனும் புயல் எச்சரிக்கை உள்ளதா?`, `இன்று குடை எடுத்துச் செல்ல வேண்டுமா?`, `அடுத்த 4 நாட்களின் வானிலை எப்படி இருக்கும்?`];
+      }
+      if (catId === 'RAIN') return [`இன்று அல்லது நாளை மழை வாய்ப்பு எவ்வளவு?`, `இன்று குடை எடுத்துச் செல்ல வேண்டுமா?`];
+      if (catId === 'FARM') return [`நாளை அறுவடை செய்யலாமா?`, `இன்று பயிருக்கு நீர் பாய்ச்சலாமா?`];
+      if (catId === 'FORECAST') return [`${loc} பகுதிக்கான 4 நாள் வானிலை முன்னறிவிப்பு காட்டு`, `நாளை மழை பெய்ய வாய்ப்புள்ளதா?`];
+    } else if (lang === 'te') {
+      if (catId === 'ALL') {
+        if (personaId === 'FARMER') return [`ఈ సీజన్‌లో ఏ పంట వేయడం మంచిది?`, `ఈరోజు పొలానికి నీరు పెట్టవచ్చా?`, `రేపు పురుగుమందు పిచికారీ చేయవచ్చా?`];
+        return [`ఈరోజు లేదా రేపు ${loc} లో వర్షం పడుతుందా?`, `ఏదైనా తుఫాను హెచ్చరిక ఉందా?`, `ఈరోజు గొడుగు తీసుకెళ్లాలా?`, `రాబోయే 4 రోజుల వాతావరణం ఎలా ఉంటుంది?`];
+      }
+      if (catId === 'RAIN') return [`ఈరోజు లేదా రేపు వర్షం పడే సంభావ్యత ఎంత?`, `ఈరోజు గొడుగు అవసరమా?`];
+      if (catId === 'FARM') return [`రేపు పంట కోత కోయవచ్చా?`, `ఈరోజు నీరు పెట్టవచ్చా?`];
+      if (catId === 'FORECAST') return [`${loc} యొక్క 4 రోజుల సూచన చూపించు`, `రేపు వర్షం పడే అవకాశం ఎంత?`];
+    } else if (lang === 'hi') {
+      if (catId === 'ALL') {
+        switch (personaId) {
+          case 'FARMER':
+            return [
+              `वर्तमान मौसम में कौन सी फसल लगाना सबसे उपयुक्त है?`,
+              `क्या कल ${loc} में धान की बुवाई कर सकते हैं?`,
+              `क्या कल ${loc} में फसल पर कीटनाशक छिड़कना सुरक्षित है?`,
+              `क्या आज खेत में सिंचाई करनी चाहिए?`,
+              `क्या आज यूरिया / खाद डालना ठीक रहेगा?`
+            ];
+          case 'COMMUTER':
+            return [
+              `क्या कल सुबह बाइक या स्कूटी से दफ्तर जाना सुरक्षित है?`,
+              `क्या कल सुबह हाईवे पर घना कोहरा रहेगा?`,
+              `क्या शाम के समय रास्ते में जलभराव या बारिश होगी?`,
+              `क्या इस सप्ताहांत लंबी हाईवे सड़क यात्रा सुरक्षित है?`
+            ];
+          case 'EVENT_OUTDOOR':
+            return [
+              `क्या कल शाम खुला शामियाना/टेंट लगाना सुरक्षित है?`,
+              `क्या कल आउटडोर क्रिकेट मैच या खेल प्रतियोगिता हो सकती है?`,
+              `कल शाम 5 से 10 बजे के बीच बारिश का सटीक प्रतिशत कितना है?`,
+              `क्या तेज आंधी या हवाओं से टेंट को नुकसान का खतरा है?`
+            ];
+          case 'HEALTH_DAILY':
+            return [
+              `क्या कल सुबह 6 बजे मॉर्निंग वॉक के लिए जाना सुरक्षित है?`,
+              `क्या अस्थमा या बुजुर्गों के लिए बाहर जाना ठीक है?`,
+              `दोपहर में लू (Heat Stress) या धूप का क्या स्तर रहेगा?`,
+              `शीतलहर (Cold Wave) से बचाव के लिए क्या सावधानी बरतें?`
+            ];
+          default: // GENERAL
+            return [
+              `क्या आज या कल ${loc} में बारिश होगी? कितने प्रतिशत संभावना है?`,
+              `क्या ${loc} में आंधी-तूफान या तेज हवाओं की चेतावनी है?`,
+              `क्या आज बाहर निकलते समय छाता साथ रखना चाहिए?`,
+              `क्या कल ${loc} में क्रिकेट या खेलकूद खेल सकते हैं?`,
+              `क्या कल सुबह हाईवे पर कोहरा या यात्रा में कोई जोखिम है?`,
+              `आगामी 4 दिनों का मौसम पूर्वानुमान व तापमान कैसा रहेगा?`
+            ];
+        }
+      }
+
+      switch (catId) {
+        case 'RAIN':
+          return [
+            `क्या आज या कल ${loc} में बारिश होगी? सटीक संभावना क्या है?`,
+            `क्या आज छाता साथ रखना आवश्यक है?`,
+            `क्या अगले 48 घंटों में भारी वर्षा या जलभराव का खतरा है?`,
+            `आज बारिश होने पर कितने घंटे तक पानी बरसने का अनुमान है?`
+          ];
+        case 'HEAT_COLD':
+          return [
+            `दोपहर में लू (Heat Stress) या धूप का क्या स्तर रहेगा?`,
+            `सुबह वॉक या दौड़ के लिए तापमान कब सबसे अनुकूल रहेगा?`,
+            `शीतलहर (Cold Wave) से बचाव के लिए क्या सावधानी बरतें?`
+          ];
+        case 'SPORTS':
+          return [
+            `क्या कल ${loc} में क्रिकेट खेल सकते हैं?`,
+            `दौड़ या वॉक के लिए सबसे अच्छा समय क्या है?`
+          ];
+        case 'FARM':
+          return [
+            `क्या कल ${loc} में गेहूं की कटाई कर सकते हैं?`,
+            `क्या आज फसल पर कीटनाशक का छिड़काव करना सुरक्षित है?`,
+            `क्या आज गेहूं में सिंचाई करनी चाहिए?`,
+            `क्या आज यूरिया / उर्वरक डालना ठीक रहेगा?`
+          ];
+        case 'PAINT':
+          return [
+            `क्या कल ${loc} में बाहरी दीवारों पर पेंट कर सकते हैं?`,
+            `क्या आज कंक्रीट या ल॔टर का काम सुरक्षित है?`
+          ];
+        case 'DRIVE':
+          return [
+            `क्या कल सुबह ${loc} में हाईवे पर कोहरा रहेगा?`,
+            `क्या कल सुबह बाइक से सफर करना सुरक्षित है?`,
+            `क्या इस सप्ताह यात्रा करना सुरक्षित है?`
+          ];
+        case 'FORECAST':
+          return [
+            `${loc} का 4-दिवसीय मौसम पूर्वानुमान दिखाएं`,
+            `क्या कल बारिश होगी और कितने प्रतिशत संभावना है?`,
+            `क्या इस सप्ताह भारी बारिश का अलर्ट है?`
+          ];
+        default:
+          return [
+            `क्या आज ${loc} में कपड़े बाहर सुखा सकते हैं?`,
+            `क्या कल बारिश होगी?`
+          ];
+      }
+    }
+
+    // Default English
     if (catId === 'ALL') {
       switch (personaId) {
         case 'FARMER':
           return [
-            isHi ? `वर्तमान मौसम में कौन सी फसल लगाना सबसे उपयुक्त है?` : `Which crop is favorable for this season in ${loc}?`,
-            isHi ? `क्या कल ${loc} में धान की बुवाई कर सकते हैं?` : `Can I sow rice in ${loc} now?`,
-            isHi ? `क्या कल ${loc} में फसल पर कीटनाशक छिड़कना सुरक्षित है?` : `Can I spray pesticide on crops tomorrow in ${loc}?`,
-            isHi ? `क्या आज खेत में सिंचाई करनी चाहिए?` : `Should I irrigate crops today in ${loc}?`,
-            isHi ? `क्या आज यूरिया / खाद डालना ठीक रहेगा?` : `Should I apply fertilizer or urea today in ${loc}?`
+            `Which crop is favorable for this season in ${loc}?`,
+            `Can I sow rice in ${loc} now?`,
+            `Can I spray pesticide on crops tomorrow in ${loc}?`,
+            `Should I irrigate crops today in ${loc}?`,
+            `Should I apply fertilizer or urea today in ${loc}?`
           ];
         case 'COMMUTER':
           return [
-            isHi ? `क्या कल सुबह बाइक या स्कूटी से दफ्तर जाना सुरक्षित है?` : `Is it safe to ride a bike to work tomorrow morning in ${loc}?`,
-            isHi ? `क्या कल सुबह हाईवे पर घना कोहरा रहेगा?` : `Will there be dense fog on highway tomorrow morning in ${loc}?`,
-            isHi ? `क्या शाम के समय रास्ते में जलभराव या बारिश होगी?` : `Will there be waterlogging or heavy rain during evening transit?`,
-            isHi ? `क्या इस सप्ताहांत लंबी हाईवे सड़क यात्रा सुरक्षित है?` : `Is a long highway road trip safe this weekend from ${loc}?`
+            `Is it safe to ride a bike to work tomorrow morning in ${loc}?`,
+            `Will there be dense fog on highway tomorrow morning in ${loc}?`,
+            `Will there be waterlogging or heavy rain during evening transit?`,
+            `Is a long highway road trip safe this weekend from ${loc}?`
           ];
         case 'EVENT_OUTDOOR':
           return [
-            isHi ? `क्या कल शाम खुला शामियाना/टेंट लगाना सुरक्षित है?` : `Can we set up an open-air tent/wedding tomorrow evening in ${loc}?`,
-            isHi ? `क्या कल आउटडोर क्रिकेट मैच या खेल प्रतियोगिता हो सकती है?` : `Can we organize an outdoor cricket tournament tomorrow in ${loc}?`,
-            isHi ? `कल शाम 5 से 10 बजे के बीच बारिश का सटीक प्रतिशत कितना है?` : `What is the exact rain probability between 5 PM and 10 PM?`,
-            isHi ? `क्या तेज आंधी या हवाओं से टेंट को नुकसान का खतरा है?` : `Is there risk of high wind gusts damaging event setup?`
+            `Can we set up an open-air tent/wedding tomorrow evening in ${loc}?`,
+            `Can we organize an outdoor cricket tournament tomorrow in ${loc}?`,
+            `What is the exact rain probability between 5 PM and 10 PM?`,
+            `Is there risk of high wind gusts damaging event setup?`
           ];
         case 'HEALTH_DAILY':
           return [
-            isHi ? `क्या कल सुबह 6 बजे मॉर्निंग वॉक के लिए जाना सुरक्षित है?` : `Is tomorrow morning safe for morning walk and jogging in ${loc}?`,
-            isHi ? `क्या अस्थमा या बुजुर्गों के लिए बाहर जाना ठीक है?` : `Is the air humidity and temperature safe for asthma patients outside?`,
-            isHi ? `दोपहर में लू (Heat Stress) या धूप का क्या स्तर रहेगा?` : `What is the heat index and UV exposure risk this afternoon in ${loc}?`,
-            isHi ? `शीतलहर (Cold Wave) से बचाव के लिए क्या सावधानी बरतें?` : `What precautions are needed for cold wave / chill index?`
+            `Is tomorrow morning safe for morning walk and jogging in ${loc}?`,
+            `Is the air humidity and temperature safe for asthma patients outside?`,
+            `What is the heat index and UV exposure risk this afternoon in ${loc}?`,
+            `What precautions are needed for cold wave / chill index?`
           ];
         default: // GENERAL
           return [
-            isHi ? `क्या आज या कल ${loc} में बारिश होगी? कितने प्रतिशत संभावना है?` : `Will it rain today or tomorrow in ${loc}? What is the exact probability?`,
-            isHi ? `क्या ${loc} में आंधी-तूफान या तेज हवाओं की चेतावनी है?` : `Is there any thunderstorm or severe weather alert in ${loc}?`,
-            isHi ? `क्या आज बाहर निकलते समय छाता साथ रखना चाहिए?` : `Do I need to carry an umbrella outdoors today in ${loc}?`,
-            isHi ? `क्या कल ${loc} में क्रिकेट या खेलकूद खेल सकते हैं?` : `Can we play cricket or outdoor sports tomorrow in ${loc}?`,
-            isHi ? `क्या कल सुबह हाईवे पर कोहरा या यात्रा में कोई जोखिम है?` : `Is there morning fog for highway travel in ${loc}?`,
-            isHi ? `आगामी 4 दिनों का मौसम पूर्वानुमान व तापमान कैसा रहेगा?` : `What is the 4-day weather trajectory and temperature outlook for ${loc}?`
+            `Will it rain today or tomorrow in ${loc}? What is the exact probability?`,
+            `Is there any thunderstorm or severe weather alert in ${loc}?`,
+            `Do I need to carry an umbrella outdoors today in ${loc}?`,
+            `Can we play cricket or outdoor sports tomorrow in ${loc}?`,
+            `Is there morning fog for highway travel in ${loc}?`,
+            `What is the 4-day weather trajectory and temperature outlook for ${loc}?`
           ];
       }
     }
@@ -367,50 +517,50 @@ export default function ChatPage({
     switch (catId) {
       case 'RAIN':
         return [
-          isHi ? `क्या आज या कल ${loc} में बारिश होगी? सटीक संभावना क्या है?` : `Will it rain today or tomorrow in ${loc}? What is the exact probability?`,
-          isHi ? `क्या आज छाता साथ रखना आवश्यक है?` : `Do I need to carry an umbrella outdoors today in ${loc}?`,
-          isHi ? `क्या अगले 48 घंटों में भारी वर्षा या जलभराव का खतरा है?` : `Is there risk of heavy precipitation or waterlogging in next 48 hours?`,
-          isHi ? `आज बारिश होने पर कितने घंटे तक पानी बरसने का अनुमान है?` : `How many precipitation hours are predicted if it rains today?`
+          `Will it rain today or tomorrow in ${loc}? What is the exact probability?`,
+          `Do I need to carry an umbrella outdoors today in ${loc}?`,
+          `Is there risk of heavy precipitation or waterlogging in next 48 hours?`,
+          `How many precipitation hours are predicted if it rains today?`
         ];
       case 'HEAT_COLD':
         return [
-          isHi ? `दोपहर में लू (Heat Stress) या धूप का क्या स्तर रहेगा?` : `What is the heat index and thermal stress this afternoon in ${loc}?`,
-          isHi ? `सुबह वॉक या दौड़ के लिए तापमान कब सबसे अनुकूल रहेगा?` : `What is the optimal temperature window for morning exercise in ${loc}?`,
-          isHi ? `शीतलहर (Cold Wave) से बचाव के लिए क्या सावधानी बरतें?` : `What precautions are needed for cold wave or nighttime chill in ${loc}?`
+          `What is the heat index and thermal stress this afternoon in ${loc}?`,
+          `What is the optimal temperature window for morning exercise in ${loc}?`,
+          `What precautions are needed for cold wave or nighttime chill in ${loc}?`
         ];
       case 'SPORTS':
         return [
-          isHi ? `क्या कल ${loc} में क्रिकेट खेल सकते हैं?` : `Can we play cricket tomorrow in ${loc}?`,
-          isHi ? `दौड़ या वॉक के लिए सबसे अच्छा समय क्या है?` : `What is the best time for morning jogging/running?`
+          `Can we play cricket tomorrow in ${loc}?`,
+          `What is the best time for morning jogging/running?`
         ];
       case 'FARM':
         return [
-          isHi ? `क्या कल ${loc} में गेहूं की कटाई कर सकते हैं?` : `Should I harvest wheat tomorrow in ${loc}?`,
-          isHi ? `क्या आज फसल पर कीटनाशक का छिड़काव करना सुरक्षित है?` : `Can I spray pesticide on my crops tomorrow?`,
-          isHi ? `क्या आज गेहूं में सिंचाई करनी चाहिए?` : `Should I irrigate crops today in ${loc}?`,
-          isHi ? `क्या आज यूरिया / उर्वरक डालना ठीक रहेगा?` : `Should I apply fertilizer to crops today?`
+          `Should I harvest wheat tomorrow in ${loc}?`,
+          `Can I spray pesticide on my crops tomorrow?`,
+          `Should I irrigate crops today in ${loc}?`,
+          `Should I apply fertilizer to crops today?`
         ];
       case 'PAINT':
         return [
-          isHi ? `क्या कल ${loc} में बाहरी दीवारों पर पेंट कर सकते हैं?` : `Can I paint exterior walls tomorrow in ${loc}?`,
-          isHi ? `क्या आज कंक्रीट या ल॔टर का काम सुरक्षित है?` : `Is it safe for roof slab concrete pouring today?`
+          `Can I paint exterior walls tomorrow in ${loc}?`,
+          `Is it safe for roof slab concrete pouring today?`
         ];
       case 'DRIVE':
         return [
-          isHi ? `क्या कल सुबह ${loc} में हाईवे पर कोहरा रहेगा?` : `Is there morning fog for highway driving in ${loc}?`,
-          isHi ? `क्या कल सुबह बाइक से सफर करना सुरक्षित है?` : `Is two-wheeler commute safe tomorrow morning?`,
-          isHi ? `क्या इस सप्ताह यात्रा करना सुरक्षित है?` : `Is highway transit safe this weekend?`
+          `Is there morning fog for highway driving in ${loc}?`,
+          `Is two-wheeler commute safe tomorrow morning?`,
+          `Is highway transit safe this weekend?`
         ];
       case 'FORECAST':
         return [
-          isHi ? `${loc} का 4-दिवसीय मौसम पूर्वानुमान दिखाएं` : `Show 4-day forecast outlook for ${loc}`,
-          isHi ? `क्या कल बारिश होगी और कितने प्रतिशत संभावना है?` : `Will it rain tomorrow and what is the exact probability?`,
-          isHi ? `क्या इस सप्ताह भारी बारिश का अलर्ट है?` : `Will there be heavy rain this week?`
+          `Show 4-day forecast outlook for ${loc}`,
+          `Will it rain tomorrow and what is the exact probability?`,
+          `Will there be heavy rain this week?`
         ];
       default:
         return [
-          isHi ? `क्या आज ${loc} में कपड़े बाहर सुखा सकते हैं?` : `Can I dry clothes outside today in ${loc}?`,
-          isHi ? `क्या कल बारिश होगी?` : `Will it rain tomorrow in ${loc}?`
+          `Can I dry clothes outside today in ${loc}?`,
+          `Will it rain tomorrow in ${loc}?`
         ];
     }
   };

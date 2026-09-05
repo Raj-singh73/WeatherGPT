@@ -6,53 +6,57 @@ import {
   Award,
   AlertTriangle
 } from 'lucide-react';
+import { getTranslation } from '../translations';
 
-export default function AboutPage() {
+export default function AboutPage({ language = 'en' }) {
+  const t = getTranslation(language).about;
+  const isHi = language === 'hi';
+
   const datasets = [
     {
       name: 'Open-Meteo Station Series',
       file: 'open-meteo-20.56N78.93E245m.csv',
-      type: 'REAL DATA',
+      type: isHi ? 'वास्तविक डेटा' : 'REAL DATA',
       records: '40,992 Hourly (2022–2026)',
       coverage: 'Wardha / Nagpur, Maharashtra',
       features: 'Temp, Humidity, Rain, Gusts, Pressure, Precipitation',
-      usage: 'Baseline short-term telemetry & live fallback'
+      usage: isHi ? 'अल्पकालिक आधारभूत मौसम व लाइव बैकअप' : 'Baseline short-term telemetry & live fallback'
     },
     {
       name: 'ISRO NRSC VIC Hydrological Model',
       file: 'nrsc_vic_rainfall.csv',
-      type: 'REAL DATA',
+      type: isHi ? 'वास्तविक डेटा' : 'REAL DATA',
       records: '27,075 Daily (2024)',
       coverage: '75 Districts of Uttar Pradesh',
       features: 'District-level daily rainfall, multi-day accumulations',
-      usage: 'Multi-day antecedent moisture & regional ground truth'
+      usage: isHi ? 'मिट्टी की नमी व बहु-दिवसीय वर्षा ग्राउंड ट्रुथ' : 'Multi-day antecedent moisture & regional ground truth'
     },
     {
       name: 'Historical Cyclone E-Atlas',
       file: 'annualFrequency-1891-2021.csv',
-      type: 'REAL DATA',
+      type: isHi ? 'वास्तविक डेटा' : 'REAL DATA',
       records: '131 Years (1891–2021)',
       coverage: 'North Indian Ocean (BOB & AS)',
       features: 'Disturbances, Cyclones, Severe Cyclones, Basin counts',
-      usage: 'Climate trends & long-term disaster frequency analytics'
+      usage: isHi ? '131 वर्षों के चक्रवात व आपदा रुझान' : 'Climate trends & long-term disaster frequency analytics'
     },
     {
       name: 'IMD Gridded Climatology (NetCDF)',
       file: 'rf_p25_jan_clm.nc',
-      type: 'REAL DATA',
+      type: isHi ? 'वास्तविक डेटा' : 'REAL DATA',
       records: '17,415 Grid Cells (0.25° x 0.25°)',
       coverage: 'All-India Mainland (6.5°N–38.5°N)',
       features: 'January baseline expected precipitation',
-      usage: 'Spatial climatology lookup & rainfall anomaly calculation'
+      usage: isHi ? 'आईएमडी वर्षा विचलन व क्षेत्रीय जलवायु बेसलाइन' : 'Spatial climatology lookup & rainfall anomaly calculation'
     },
     {
       name: 'WeatherGPT Multi-hazard Benchmark',
       file: 'synthetic_weather_risk_demo.csv',
-      type: 'SYNTHETIC DEMO DATA',
+      type: isHi ? 'सिंथेटिक डेमो डेटा' : 'SYNTHETIC DEMO DATA',
       records: '12,000 Physically-Simulated Events',
       coverage: 'Representative Pan-India Microclimates',
       features: 'All 24 engineered features + Risk Score & Level target',
-      usage: 'ML training & architecture demonstration until certified event labels are available'
+      usage: isHi ? 'एमएल प्रशिक्षण एवं जोखिम मॉडल सत्यापन' : 'ML training & architecture demonstration until certified event labels are available'
     }
   ];
 
@@ -62,19 +66,16 @@ export default function AboutPage() {
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
         <div className="flex items-center space-x-2 text-xs font-bold text-sky-700 mb-2 uppercase tracking-wider">
           <Award className="h-4 w-4" />
-          <span>Conversational AI for Weather Intelligence, Early Warning & Climate Action</span>
+          <span>{t.badge || 'Conversational AI for Weather Intelligence, Early Warning & Climate Action'}</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-          Weather<span className="text-sky-600">GPT</span> Architecture & Provenance
+          Weather<span className="text-sky-600">GPT</span> — {t.title}
         </h1>
         <p className="text-base text-slate-700 mt-2 font-semibold">
-          “From Weather Data to Actionable Decisions.”
+          “{language === 'hi' ? 'मौसम डेटा से समय पर सही निर्णय तक।' : 'From Weather Data to Actionable Decisions.'}”
         </p>
         <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-          Traditional meteorological systems present raw charts, isobars, and numerical values that citizens 
-          and farmers struggle to transform into time-sensitive decisions. WeatherGPT unifies <strong>real-time NWP forecasts, 
-          historical gridded climatology, machine learning risk estimation, and agronomic RAG guidance</strong> into 
-          context-aware, multilingual conversational decision support.
+          {t.subtitle}
         </p>
       </div>
 
@@ -82,18 +83,18 @@ export default function AboutPage() {
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-center space-x-2 mb-4">
           <Database className="h-4 w-4 text-sky-600" />
-          <h2 className="text-base font-extrabold text-slate-900">Dataset Inventory & Scientific Provenance</h2>
+          <h2 className="text-base font-extrabold text-slate-900">{t.dataSources}</h2>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-slate-200 text-slate-500 uppercase tracking-wider font-bold">
-                <th className="pb-3 pl-2">Dataset Name</th>
-                <th className="pb-3">Provenance Category</th>
-                <th className="pb-3">Records & Horizon</th>
-                <th className="pb-3">Geographic Scope</th>
-                <th className="pb-3 pr-2">Role in WeatherGPT</th>
+                <th className="pb-3 pl-2">{t.colDataset || 'Dataset Name'}</th>
+                <th className="pb-3">{t.colType || 'Provenance Category'}</th>
+                <th className="pb-3">{t.colRecords || 'Records & Horizon'}</th>
+                <th className="pb-3">{t.colCoverage || 'Geographic Scope'}</th>
+                <th className="pb-3 pr-2">{t.colUsage || 'Role in WeatherGPT'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -105,7 +106,7 @@ export default function AboutPage() {
                   </td>
                   <td className="py-3.5">
                     <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase border ${
-                      d.type === 'REAL DATA' 
+                      d.type.includes('REAL') || d.type.includes('वास्तविक') 
                         ? 'bg-emerald-100 text-emerald-800 border-emerald-200' 
                         : 'bg-amber-100 text-amber-800 border-amber-200'
                     }`}>
@@ -127,31 +128,35 @@ export default function AboutPage() {
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
           <div className="flex items-center space-x-2 mb-3 text-emerald-700">
             <Cpu className="h-4 w-4" />
-            <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Champion Model Metrics</h3>
+            <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">
+              {t.mlTitle || 'Champion Model Metrics'}
+            </h3>
           </div>
           <p className="text-xs text-slate-600 mb-4 leading-relaxed">
-            Evaluated using a <strong>Time-Aware Chronological Split (80% Train, 20% Test)</strong> with zero future leakage.
+            {language === 'hi' 
+              ? 'बिना किसी डेटा लीकेज के कालानुक्रमिक विभाजन (80% प्रशिक्षण, 20% परीक्षण) पर सत्यापित।' 
+              : 'Evaluated using a Time-Aware Chronological Split (80% Train, 20% Test) with zero future leakage.'}
           </p>
 
           <div className="space-y-2.5 text-xs text-slate-700">
             <div className="flex justify-between border-b border-slate-100 pb-2">
-              <span className="text-slate-500">Champion Classifier:</span>
+              <span className="text-slate-500">{language === 'hi' ? 'मुख्य क्लासिफायर:' : 'Champion Classifier:'}</span>
               <strong className="text-slate-900 font-bold">HistGradientBoostingClassifier</strong>
             </div>
             <div className="flex justify-between border-b border-slate-100 pb-2">
-              <span className="text-slate-500">Real Test Accuracy:</span>
+              <span className="text-slate-500">{language === 'hi' ? 'परीक्षण सटीकता:' : 'Real Test Accuracy:'}</span>
               <strong className="text-emerald-700 font-bold">99.08%</strong>
             </div>
             <div className="flex justify-between border-b border-slate-100 pb-2">
-              <span className="text-slate-500">Macro F1-Score:</span>
+              <span className="text-slate-500">{language === 'hi' ? 'मैक्रो F1 स्कोर:' : 'Macro F1-Score:'}</span>
               <strong className="text-emerald-700 font-bold">98.23%</strong>
             </div>
             <div className="flex justify-between border-b border-slate-100 pb-2">
-              <span className="text-slate-500">Risk Score Regressor MAE:</span>
+              <span className="text-slate-500">{language === 'hi' ? 'जोखिम स्कोर MAE:' : 'Risk Score Regressor MAE:'}</span>
               <strong className="text-sky-700 font-bold">0.33 points (0-100 scale)</strong>
             </div>
             <div className="flex justify-between pt-1">
-              <span className="text-slate-500">Top Features:</span>
+              <span className="text-slate-500">{language === 'hi' ? 'प्रमुख कारक:' : 'Top Features:'}</span>
               <span className="text-slate-800 font-semibold">Precipitation, Wind Gusts, Pressure, Soil Moisture</span>
             </div>
           </div>
@@ -162,21 +167,23 @@ export default function AboutPage() {
           <div>
             <div className="flex items-center space-x-2 mb-3 text-amber-600">
               <ShieldCheck className="h-4 w-4" />
-              <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Scientific Honesty & Integrity Guarantee</h3>
+              <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">
+                {t.physicsTitle || 'Scientific Honesty & Integrity Guarantee'}
+              </h3>
             </div>
             <p className="text-xs text-slate-700 leading-relaxed mb-3">
-              WeatherGPT strictly complies with transparent AI evaluation standards:
+              {language === 'hi' ? 'वेदर-जीपीटी पारदर्शी और सत्यापन-योग्य सिद्धांतों का पालन करता है:' : 'WeatherGPT strictly complies with transparent AI evaluation standards:'}
             </p>
             <ul className="space-y-2 text-xs text-slate-600 list-disc list-inside">
-              <li><strong>No fabricated accuracy numbers:</strong> All metrics presented reflect actual scikit-learn test evaluation.</li>
-              <li><strong>No synthetic data misrepresentation:</strong> Demonstration labels are explicitly categorized as synthetic training data.</li>
-              <li><strong>No fake government alerts:</strong> Simulated advisories are prominently badged as DEMO ALERTS.</li>
-              <li><strong>API Offline Resiliency:</strong> Automatic graceful fallback to local physical telemetry if live APIs timeout.</li>
+              <li><strong>{language === 'hi' ? 'कोई काल्पनिक सटीकता नहीं:' : 'No fabricated accuracy numbers:'}</strong> {language === 'hi' ? 'सभी मेट्रिक्स वास्तविक scikit-learn परीक्षण पर आधारित हैं।' : 'All metrics presented reflect actual scikit-learn test evaluation.'}</li>
+              <li><strong>{language === 'hi' ? 'सिंथेटिक डेटा की स्पष्ट लेबलिंग:' : 'Clear synthetic data disclosure:'}</strong> {language === 'hi' ? 'डेमो लेबल्स को स्पष्ट रूप से दर्शाया गया है।' : 'Demonstration labels are explicitly categorized as synthetic training data.'}</li>
+              <li><strong>{language === 'hi' ? 'कोई फर्जी सरकारी अलर्ट नहीं:' : 'No fake statutory alerts:'}</strong> {language === 'hi' ? 'सिम्युलेटेड सलाहों पर स्पष्ट रूप से डेमो अलर्ट अंकित है।' : 'Simulated advisories are prominently badged as DEMO ALERTS.'}</li>
+              <li><strong>{language === 'hi' ? 'ऑफलाइन बैकअप क्षमता:' : 'API Offline Resiliency:'}</strong> {language === 'hi' ? 'इंटरनेट या एपीआई बाधित होने पर स्थानीय भौतिक मॉडल बैकअप।' : 'Automatic graceful fallback to local physical telemetry if live APIs timeout.'}</li>
             </ul>
           </div>
 
           <div className="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-500 italic">
-            “AI-generated risk assessment — verify with official authorities (IMD / NDMA) for emergency decisions.”
+            “{t.disclaimerText}”
           </div>
         </div>
       </div>

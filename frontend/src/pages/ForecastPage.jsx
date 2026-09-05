@@ -5,9 +5,6 @@ import {
   Area, 
   BarChart, 
   Bar, 
-  ComposedChart,
-  LineChart, 
-  Line, 
   XAxis, 
   YAxis, 
   Tooltip, 
@@ -18,12 +15,14 @@ import { getTranslation } from '../translations';
 
 export default function ForecastPage({ forecast, location = 'Nagpur', language = 'en' }) {
   const t = getTranslation(language);
+  const tf = t.forecast;
+  const tc = t.common;
   const days = forecast?.forecast_days || [];
 
   // Format data for Recharts
   const chartData = days.map(d => {
     const dateObj = new Date(d.date);
-    const dayLabel = dateObj.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' });
+    const dayLabel = dateObj.toLocaleDateString(tc?.locale || 'en-IN', { weekday: 'short', day: 'numeric' });
     const p = d.precipitation_sum || 0;
     const prob = (d.precipitation_probability_max !== undefined && d.precipitation_probability_max !== null) 
       ? d.precipitation_probability_max 
@@ -39,7 +38,7 @@ export default function ForecastPage({ forecast, location = 'Nagpur', language =
       rainSum: d.rain_sum || p,
       precipProb: Math.round(prob),
       precipHours: hrs,
-      precipCategory: d.precipitation_category || (p > 0 ? 'Light/Moderate Rain' : 'No Rain (Dry)'),
+      precipCategory: d.precipitation_category || (p > 0 ? (language === 'hi' ? 'हल्की/मध्यम बारिश' : 'Light/Moderate Rain') : (language === 'hi' ? 'शुष्क मौसम' : 'No Rain (Dry)')),
       windGust: d.wind_gust_max,
       riskScore: d.risk_score,
       riskLevel: d.risk_level,
@@ -52,8 +51,6 @@ export default function ForecastPage({ forecast, location = 'Nagpur', language =
   const totalAccumulatedRain = chartData.reduce((acc, d) => acc + d.precip, 0).toFixed(1);
   const rainyDaysCount = chartData.filter(d => d.precip > 0.5).length;
   const maxRainDay = chartData.reduce((max, d) => d.precip > (max?.precip || 0) ? d : max, chartData[0] || { precip: 0, name: 'None' });
-  const maxRainVal = Math.max(...chartData.map(d => d.precip), 0);
-  const maxRainDomain = Math.max(10, Math.ceil(maxRainVal * 1.3));
 
   // 24h and 72h accumulated rain prediction
   const rain24h = chartData[0]?.precip || 0.0;
@@ -61,15 +58,15 @@ export default function ForecastPage({ forecast, location = 'Nagpur', language =
   const todayForecast = chartData[0] || {};
   const todayRainProb = todayForecast.precipProb ?? 10;
   const todayRainHours = todayForecast.precipHours ?? 0;
-  const todayPrecipCategory = todayForecast.precipCategory || (rain24h > 0 ? 'Light Rain' : 'No Rain (Dry)');
+  const todayPrecipCategory = todayForecast.precipCategory || (rain24h > 0 ? (language === 'hi' ? 'हल्की बारिश' : 'Light Rain') : (language === 'hi' ? 'शुष्क मौसम' : 'No Rain (Dry)'));
 
   if (!forecast && days.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] bg-white border border-slate-200 rounded-3xl p-12 text-center">
         <Loader2 className="h-10 w-10 text-sky-600 animate-spin mb-4" />
-        <h3 className="text-lg font-bold text-slate-800">Initializing Meteorological Forecast Models</h3>
+        <h3 className="text-lg font-bold text-slate-800">{tf.loadingTitle}</h3>
         <p className="text-xs text-slate-500 mt-1 max-w-md">
-          Retrieving numerical weather prediction curves, precipitation accumulation probability, and physical atmospheric parameters for {location}...
+          {tf.loadingDesc} ({location})
         </p>
       </div>
     );
@@ -83,18 +80,18 @@ export default function ForecastPage({ forecast, location = 'Nagpur', language =
           <div>
             <div className="flex items-center space-x-2 text-xs font-bold text-sky-700 mb-1 uppercase tracking-wider">
               <Calendar className="h-3.5 w-3.5" />
-              <span>Multi-Day Numerical Weather Prediction</span>
+              <span>{tf.subtitle}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              7-Day Detailed Meteorological Forecast
+              {tf.title}
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Station location: <strong className="text-slate-800">{location}</strong> • High-Resolution Precipitation & Thermal Model
+              {tf.station} <strong className="text-slate-800">{location}</strong> • {tf.modelInfo}
             </p>
           </div>
 
           <div className="px-3.5 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-700 font-semibold self-start sm:self-auto shadow-sm">
-            Source: {forecast?.data_source || 'LIVE (Open-Meteo API)'}
+            {tf.source} {forecast?.data_source || 'LIVE (Open-Meteo API)'}
           </div>
         </div>
       </div>
@@ -109,57 +106,57 @@ export default function ForecastPage({ forecast, location = 'Nagpur', language =
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-black text-slate-900">
-                  Precipitation & Rainfall Prediction Model
+                  {tf.precipModel}
                 </h2>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-200 uppercase tracking-wider inline-flex items-center gap-1">
-                  <Sparkles className="h-2.5 w-2.5" /> AI Calibrated
+                  <Sparkles className="h-2.5 w-2.5" /> {tf.aiCalibrated}
                 </span>
               </div>
               <p className="text-xs text-slate-500">
-                Continuous numerical rainfall simulation, dual-axis probability tracking, and IMD intensity classification
+                {tf.precipModelDesc}
               </p>
             </div>
           </div>
 
           <span className="text-xs font-bold bg-sky-100 text-sky-800 border border-sky-200 px-3 py-1 rounded-xl self-start sm:self-auto">
-            {rainyDaysCount > 0 ? `${rainyDaysCount} Rain Event(s) in next 7 days` : 'Predominantly Dry Horizon'}
+            {rainyDaysCount > 0 ? tf.rainEvents.replace('{count}', rainyDaysCount) : tf.dryHorizon}
           </span>
         </div>
 
         {/* 4 Summary Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mb-5">
           <div className="bg-white/90 border border-slate-200 rounded-2xl p-4 shadow-xs">
-            <span className="text-[11px] font-bold text-slate-500 uppercase block">Total 7-Day Accumulation</span>
+            <span className="text-[11px] font-bold text-slate-500 uppercase block">{tf.totalAccumulation}</span>
             <div className="text-2xl sm:text-3xl font-black text-sky-700 mt-1">
               {totalAccumulatedRain} <span className="text-sm font-normal text-slate-400">mm</span>
             </div>
-            <p className="text-[10px] text-slate-500 mt-0.5">Sum of daily rain volume</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">{tf.totalAccumulationDesc}</p>
           </div>
 
           <div className="bg-white/90 border border-slate-200 rounded-2xl p-4 shadow-xs">
-            <span className="text-[11px] font-bold text-slate-500 uppercase block">Peak Rain Day</span>
+            <span className="text-[11px] font-bold text-slate-500 uppercase block">{tf.peakRainDay}</span>
             <div className="text-xl sm:text-2xl font-black text-indigo-700 mt-1 truncate">
               {maxRainDay?.name || 'N/A'}
             </div>
             <p className="text-[10px] text-slate-500 mt-0.5">
-              {maxRainDay?.precip ? `${maxRainDay.precip.toFixed(1)} mm (${maxRainDay.precipProb}% prob)` : 'No significant rain'}
+              {maxRainDay?.precip ? `${maxRainDay.precip.toFixed(1)} mm (${maxRainDay.precipProb}%)` : tf.dryHorizon}
             </p>
           </div>
 
           <div className="bg-white/90 border border-slate-200 rounded-2xl p-4 shadow-xs">
-            <span className="text-[11px] font-bold text-slate-500 uppercase block">Average Probability</span>
+            <span className="text-[11px] font-bold text-slate-500 uppercase block">{tf.highProbDays}</span>
             <div className="text-2xl sm:text-3xl font-black text-teal-700 mt-1">
-              {chartData.length > 0 ? Math.round(chartData.reduce((a, b) => a + b.precipProb, 0) / chartData.length) : 10}%
+              {chartData.filter(d => d.precipProb >= 40).length}
             </div>
-            <p className="text-[10px] text-slate-500 mt-0.5">Mean rain likelihood</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">{tf.highProbDaysDesc}</p>
           </div>
 
           <div className="bg-white/90 border border-slate-200 rounded-2xl p-4 shadow-xs">
-            <span className="text-[11px] font-bold text-slate-500 uppercase block">Primary Classification</span>
-            <div className="text-sm font-black text-slate-800 mt-1 truncate">
-              {maxRainDay?.precipCategory || 'Dry'}
+            <span className="text-[11px] font-bold text-slate-500 uppercase block">{tf.forecast24h}</span>
+            <div className="text-2xl sm:text-3xl font-black text-slate-800 mt-1 truncate">
+              {rain24h.toFixed(1)} <span className="text-sm font-normal text-slate-400">mm</span>
             </div>
-            <p className="text-[10px] text-slate-500 mt-0.5">Official IMD Standard</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">{tf.forecast24hDesc}</p>
           </div>
         </div>
 
@@ -167,7 +164,7 @@ export default function ForecastPage({ forecast, location = 'Nagpur', language =
         <div className="bg-white border border-sky-200 rounded-2xl p-4 shadow-xs mb-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-sky-800">Model Rain Assessment:</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-sky-800">{tf.modelAssessment}:</span>
               <span className={`text-xs font-black px-2.5 py-0.5 rounded-full border ${
                 rain24h >= 30.0 ? 'bg-rose-100 text-rose-800 border-rose-200' :
                 rain24h >= 7.6 ? 'bg-orange-100 text-orange-800 border-orange-200' :
@@ -178,17 +175,17 @@ export default function ForecastPage({ forecast, location = 'Nagpur', language =
               </span>
             </div>
             <p className="text-xs text-slate-600">
-              Today: <strong className="text-slate-900">{rain24h.toFixed(1)} mm</strong> expected ({todayRainProb}% probability, ~{todayRainHours} hrs duration) • 72-Hour Cumulative: <strong className="text-indigo-700">{rain72h.toFixed(1)} mm</strong>
+              {tf.rain24hPred}: <strong className="text-slate-900">{rain24h.toFixed(1)} mm</strong> ({todayRainProb}% {tf.rainProb}, ~{todayRainHours} hrs) • {tf.rain72hCum}: <strong className="text-indigo-700">{rain72h.toFixed(1)} mm</strong>
             </p>
             {todayForecast.recommendation && (
               <p className="text-[11px] text-slate-500 italic mt-0.5">
-                Directive: {todayForecast.recommendation}
+                {tf.directive}: {todayForecast.recommendation}
               </p>
             )}
           </div>
 
           <div className="flex items-center gap-2 text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl self-stretch md:self-auto justify-between md:justify-start">
-            <span>24h / 72h Output:</span>
+            <span>24h / 72h:</span>
             <span className="text-sky-700 font-extrabold">{rain24h.toFixed(1)} mm / {rain72h.toFixed(1)} mm</span>
           </div>
         </div>
@@ -198,14 +195,14 @@ export default function ForecastPage({ forecast, location = 'Nagpur', language =
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
               <CloudRain className="h-4 w-4 text-sky-600" />
-              Daily Rain Volume (mm) & Rain Probability (%)
+              {tf.precipChartTitle}
             </span>
             <div className="flex items-center gap-3 text-[11px] font-semibold">
               <span className="flex items-center gap-1 text-sky-700">
-                <span className="h-2.5 w-2.5 rounded-sm bg-sky-600 inline-block"></span> Rainfall (mm)
+                <span className="h-2.5 w-2.5 rounded-sm bg-sky-600 inline-block"></span> {tf.rainfallMm}
               </span>
               <span className="flex items-center gap-1 text-teal-700">
-                <span className="h-2.5 w-2.5 rounded-sm bg-teal-400 inline-block"></span> Probability (%)
+                <span className="h-2.5 w-2.5 rounded-sm bg-teal-400 inline-block"></span> {tf.rainProb}
               </span>
             </div>
           </div>
@@ -220,8 +217,8 @@ export default function ForecastPage({ forecast, location = 'Nagpur', language =
                   contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '0.75rem', fontSize: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
                   labelStyle={{ color: '#0f172a', fontWeight: 'bold' }}
                 />
-                <Bar dataKey="precip" fill="#0284c7" radius={[6, 6, 0, 0]} name="Precipitation (mm)" />
-                <Bar dataKey="precipProb" fill="#2dd4bf" radius={[6, 6, 0, 0]} name="Probability (%)" />
+                <Bar dataKey="precip" fill="#0284c7" radius={[6, 6, 0, 0]} name={tf.rainfallMm} />
+                <Bar dataKey="precipProb" fill="#2dd4bf" radius={[6, 6, 0, 0]} name={tf.rainProb} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -233,14 +230,14 @@ export default function ForecastPage({ forecast, location = 'Nagpur', language =
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <Thermometer className="h-4 w-4 text-rose-500" />
-            <h3 className="text-sm font-extrabold text-slate-900">Temperature Trajectory (°C)</h3>
+            <h3 className="text-sm font-extrabold text-slate-900">{tf.tempChartTitle}</h3>
           </div>
           <div className="flex items-center space-x-4 text-xs font-semibold">
             <span className="flex items-center gap-1.5 text-slate-600">
-              <span className="h-2.5 w-2.5 rounded-full bg-rose-500 inline-block"></span> Max Temp
+              <span className="h-2.5 w-2.5 rounded-full bg-rose-500 inline-block"></span> {tf.maxTemp}
             </span>
             <span className="flex items-center gap-1.5 text-slate-600">
-              <span className="h-2.5 w-2.5 rounded-full bg-sky-500 inline-block"></span> Min Temp
+              <span className="h-2.5 w-2.5 rounded-full bg-sky-500 inline-block"></span> {tf.minTemp}
             </span>
           </div>
         </div>
@@ -265,8 +262,8 @@ export default function ForecastPage({ forecast, location = 'Nagpur', language =
                 contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '0.75rem', fontSize: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
                 labelStyle={{ color: '#0f172a', fontWeight: 'bold' }}
               />
-              <Area type="monotone" dataKey="maxTemp" stroke="#e11d48" strokeWidth={2.5} fillOpacity={1} fill="url(#tempMaxGrad)" name="Max Temp (°C)" />
-              <Area type="monotone" dataKey="minTemp" stroke="#0284c7" strokeWidth={2} fillOpacity={1} fill="url(#tempMinGrad)" name="Min Temp (°C)" />
+              <Area type="monotone" dataKey="maxTemp" stroke="#e11d48" strokeWidth={2.5} fillOpacity={1} fill="url(#tempMaxGrad)" name={`${tf.maxTemp} (°C)`} />
+              <Area type="monotone" dataKey="minTemp" stroke="#0284c7" strokeWidth={2} fillOpacity={1} fill="url(#tempMinGrad)" name={`${tf.minTemp} (°C)`} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -276,20 +273,20 @@ export default function ForecastPage({ forecast, location = 'Nagpur', language =
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm overflow-x-auto">
         <div className="flex items-center space-x-2 mb-4">
           <ShieldAlert className="h-4 w-4 text-amber-500" />
-          <h3 className="text-sm font-extrabold text-slate-900">Daily Meteorological & ML Impact Breakdown</h3>
+          <h3 className="text-sm font-extrabold text-slate-900">{tf.detailedDayTitle}</h3>
         </div>
 
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-slate-200 text-slate-500 uppercase tracking-wider font-bold">
-              <th className="pb-3 pl-2">Date</th>
-              <th className="pb-3">Forecast Condition</th>
-              <th className="pb-3">Max / Min Temp</th>
-              <th className="pb-3">Precipitation (mm)</th>
-              <th className="pb-3">Rain Probability</th>
-              <th className="pb-3">Intensity Tier</th>
-              <th className="pb-3">Wind Gusts</th>
-              <th className="pb-3 pr-2">Impact Tier</th>
+              <th className="pb-3 pl-2">{tf.date}</th>
+              <th className="pb-3">{tf.rainPrecip}</th>
+              <th className="pb-3">{tf.temp}</th>
+              <th className="pb-3">{tf.rainfallMm}</th>
+              <th className="pb-3">{tf.rainProb}</th>
+              <th className="pb-3">{tf.intensityLevel}</th>
+              <th className="pb-3">{tf.windGusts}</th>
+              <th className="pb-3 pr-2">{tf.risk}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -320,7 +317,7 @@ export default function ForecastPage({ forecast, location = 'Nagpur', language =
                     d.riskLevel?.toUpperCase() === 'MODERATE' ? 'bg-amber-100 text-amber-800 border-amber-200' :
                     'bg-emerald-100 text-emerald-800 border-emerald-200'
                   }`}>
-                    {d.riskLevel}
+                    {tc?.riskLevels?.[d.riskLevel?.toUpperCase()] || d.riskLevel}
                   </span>
                 </td>
               </tr>

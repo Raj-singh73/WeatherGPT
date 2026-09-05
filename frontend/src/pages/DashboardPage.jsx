@@ -48,7 +48,7 @@ export default function DashboardPage({
   const riskRecommendation = todayRisk.recommendation || 'Normal routine activities permitted. Keep monitoring regular local advisories.';
 
   // Format date
-  const formattedDate = new Date().toLocaleDateString('en-IN', {
+  const formattedDate = new Date().toLocaleDateString(t.common?.locale || 'en-IN', {
     weekday: 'long',
     year: 'numeric',
     month: 'short',
@@ -131,12 +131,12 @@ export default function DashboardPage({
             <Sparkles className="h-3.5 w-3.5 text-amber-500" />
             <span>{t.dashboard.askWeatherGPT}</span>
           </span>
-          {[
+          {(t.common?.quickPrompts || [
             `Will it rain tomorrow in ${displayLocation}?`,
             `Is it safe to travel this weekend?`,
             `Should I irrigate my wheat crop today?`,
             `Show cyclone frequency trends`
-          ].map((prompt, idx) => (
+          ]).map((prompt, idx) => (
             <button
               key={idx}
               onClick={() => onQuickChatPrompt(prompt)}
@@ -246,6 +246,7 @@ export default function DashboardPage({
               surface_pressure: current.surface_pressure || 1008,
               soil_moisture: 48
             }}
+            language={language}
           />
         </div>
 
