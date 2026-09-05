@@ -193,70 +193,36 @@ export default function ForecastPage({ forecast, location = 'Nagpur', language =
           </div>
         </div>
 
-        {/* Dual-Axis Precipitation Bar & Probability Line Chart */}
+        {/* Precipitation Bar & Probability Chart */}
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+          <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
               <CloudRain className="h-4 w-4 text-sky-600" />
-              Precipitation Volume (mm, Left Axis) & Likelihood Probability (%, Right Axis)
+              Daily Rain Volume (mm) & Rain Probability (%)
             </span>
             <div className="flex items-center gap-3 text-[11px] font-semibold">
               <span className="flex items-center gap-1 text-sky-700">
                 <span className="h-2.5 w-2.5 rounded-sm bg-sky-600 inline-block"></span> Rainfall (mm)
               </span>
               <span className="flex items-center gap-1 text-teal-700">
-                <span className="h-2 w-2 rounded-full bg-teal-600 inline-block"></span> Probability (%)
+                <span className="h-2.5 w-2.5 rounded-sm bg-teal-400 inline-block"></span> Probability (%)
               </span>
             </div>
           </div>
 
-          <div className="h-64 w-full">
+          <div className="h-60 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="name" stroke="#64748b" tick={{ fontSize: 11 }} />
-                <YAxis 
-                  yAxisId="rain" 
-                  stroke="#0284c7" 
-                  tick={{ fontSize: 11 }} 
-                  unit=" mm" 
-                  domain={[0, maxRainDomain]} 
-                />
-                <YAxis 
-                  yAxisId="prob" 
-                  orientation="right" 
-                  stroke="#0d9488" 
-                  tick={{ fontSize: 11 }} 
-                  unit="%" 
-                  domain={[0, 100]} 
-                />
+                <YAxis stroke="#64748b" tick={{ fontSize: 11 }} />
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '0.75rem', fontSize: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
                   labelStyle={{ color: '#0f172a', fontWeight: 'bold' }}
-                  formatter={(value, name) => [
-                    name.includes('Rainfall') || name.includes('Precipitation') 
-                      ? `${Number(value).toFixed(1)} mm` 
-                      : `${Math.round(value)}%`,
-                    name
-                  ]}
                 />
-                <Bar 
-                  yAxisId="rain" 
-                  dataKey="precip" 
-                  fill="#0284c7" 
-                  radius={[6, 6, 0, 0]} 
-                  name="Rainfall (mm)" 
-                />
-                <Line 
-                  yAxisId="prob" 
-                  type="monotone" 
-                  dataKey="precipProb" 
-                  stroke="#0d9488" 
-                  strokeWidth={2.5} 
-                  dot={{ r: 4, fill: '#0d9488' }} 
-                  name="Rain Probability (%)" 
-                />
-              </ComposedChart>
+                <Bar dataKey="precip" fill="#0284c7" radius={[6, 6, 0, 0]} name="Precipitation (mm)" />
+                <Bar dataKey="precipProb" fill="#2dd4bf" radius={[6, 6, 0, 0]} name="Probability (%)" />
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>

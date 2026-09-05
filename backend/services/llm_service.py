@@ -1327,26 +1327,26 @@ def evaluate_use_case_decision(
         verdict = "INFO"
         badge = "👋 WEATHRE-GPT ASSISTANT"
         score = 100.0
-        steps = ["Ask practical questions like laundry, car wash, sports, or harvesting."]
+        steps = ["Ask practical weather questions like rain forecast, storm alerts, outdoor sports, or harvesting."]
         if lang == "hi":
             text = (
                 f"नमस्ते! मैं WeatherGPT हूँ — आपका AI मौसम व व्यावहारिक निर्णय सहायक।\n\n"
                 f"वर्तमान में **{location}** में तापमान **{temp:.1f}°C** है और आसमान **{curr.weather_description}** है।\n\n"
-                f"मुझसे अपने व्यावहारिक निर्णय पूछें, जैसे:\n"
-                f"• “क्या आज कपड़े बाहर सुखा सकते हैं?”\n"
-                f"• “क्या मुझे आज कार धोनी चाहिए?”\n"
-                f"• “क्या कल क्रिकेट खेल सकते हैं?”\n"
-                f"• “क्या गेहूं की फसल की कटाई शुरू करें?”"
+                f"मुझसे मौसम संबंधी निर्णय पूछें, जैसे:\n"
+                f"• “क्या आज या कल बारिश होगी?”\n"
+                f"• “क्या आंधी-तूफान या बिजली गिरने की चेतावनी है?”\n"
+                f"• “क्या कल आउटडोर क्रिकेट खेल सकते हैं?”\n"
+                f"• “क्या गेहूं/धान की फसल की कटाई शुरू करें?”"
             )
         else:
             text = (
                 f"Hello! I am WeatherGPT — your AI assistant for real-time weather predictions and actionable decisions.\n\n"
                 f"Currently in **{location}**, temperature is **{temp:.1f}°C** with **{curr.weather_description}**.\n\n"
                 f"Ask me practical questions such as:\n"
-                f"• “Can I dry clothes outside today?”\n"
-                f"• “Should I wash my car today?”\n"
-                f"• “Can we play cricket tomorrow?”\n"
-                f"• “Should I harvest wheat tomorrow?”"
+                f"• “Will it rain today or tomorrow?”\n"
+                f"• “Is there any thunderstorm or lightning alert?”\n"
+                f"• “Can we play cricket or sports tomorrow?”\n"
+                f"• “Should I harvest crops or spray pesticide?”"
             )
         meta.update({"verdict": verdict, "verdict_badge": badge, "suitability_score": score, "action_steps": steps})
         return text, meta
@@ -1456,7 +1456,7 @@ def evaluate_use_case_decision(
                     f"• **तापमान व अहसास**: वर्तमान {temp:.1f}°C (महसूस होने वाला: **{apparent_temp:.1f}°C**), आर्द्रता **{humidity:.0f}%**।\n"
                     f"• **मॉर्निंग वॉक / व्यायाम**: सुबह 6:00 से 8:30 बजे का समय सबसे सुखद व सुरक्षित है।\n"
                     f"• **वरिष्ठ नागरिक व बच्चे**: {'दोपहर 11:30 से 4:00 के बीच सीधी धूप में न निकलें।' if heat_alert else 'मौसम पूरी तरह आरामदायक है।'}\n"
-                    f"• **कपड़े सुखाना / कार धुलाई**: {'धूप अच्छी है, कपड़े व कार धोने के लिए उत्तम दिन है।' if rain_today < 0.5 and rain_tomorrow < 1.0 else 'कपड़े घर के अंदर सुखाएं।'}\n\n"
+                    f"• **दैनिक दिनचर्या**: {'खुले वातावरण में सैर व दैनिक कार्यों के लिए मौसम अनुकूल है।' if rain_today < 0.5 and rain_tomorrow < 1.0 else 'बारिश का अनुमान; बाहर निकलते समय छाता साथ रखें।'}\n\n"
                     f"💡 **सलाह**: {'खूब पानी, मट्ठा व नारियल पानी पिएं।' if heat_alert else 'दिनचर्या सामान्य रूप से जारी रख सकते हैं।'}"
                 )
             else:
@@ -1465,7 +1465,7 @@ def evaluate_use_case_decision(
                     f"• **Thermal Feel**: Ambient {temp:.1f}°C (Feels like: **{apparent_temp:.1f}°C**), Humidity {humidity:.0f}%.\n"
                     f"• **Exercise & Walk Window**: Optimal between 6:00 AM – 8:30 AM and 5:00 PM – 7:00 PM.\n"
                     f"• **Senior Citizens & Children**: {'Avoid direct midday sun between 11:30 AM and 4:00 PM.' if heat_alert else 'Comfortable ambient profile without extreme thermal stress.'}\n"
-                    f"• **Household Tasks**: {'Great conditions for laundry line-drying and car detailing.' if rain_today < 0.5 and rain_tomorrow < 1.0 else 'Hang clothes in a sheltered corridor.'}\n\n"
+                    f"• **Outdoor Routines**: {'Favorable conditions for daytime outdoor routines and travel.' if rain_today < 0.5 and rain_tomorrow < 1.0 else 'Precipitation expected; carry an umbrella and plan indoor alternatives.'}\n\n"
                     f"💡 **Actionable Solution**: {'Maintain active hydration with water and electrolytes.' if heat_alert else 'Standard health routines proceed smoothly.'}"
                 )
         else: # GENERAL

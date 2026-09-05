@@ -8,6 +8,8 @@ import {
   Languages,
   Loader2,
   Clock,
+  Check,
+  CheckCheck,
   CheckCircle2,
   AlertTriangle,
   AlertCircle,
@@ -36,13 +38,13 @@ export default function ChatPage({
   const getWelcomeMessage = (lang, loc) => {
     switch (lang) {
       case 'hi':
-        return `नमस्ते! मैं **WeatherGPT** हूँ — आपका AI मौसम व व्यावहारिक निर्णय सहायक।\n\nमैं **${loc}** और पूरे भारत के लिए वास्तविक समय पूर्वानुमान, बहु-दिवसीय वर्षा जोखिम और व्यावहारिक निर्णयों (कपड़े सुखाना, कार धोना, आउटडोर खेल, फसल कटाई, यात्रा सुरक्षा) का विश्लेषण कर सकता हूँ।\n\nनीचे दिए गए किसी भी व्यावहारिक विषय पर क्लिक करें या अपना प्रश्न पूछें!`;
+        return `नमस्ते! मैं **WeatherGPT** हूँ — आपका AI मौसम व बहु-आपदा जोखिम विश्लेषक।\n\nमैं **${loc}** और पूरे भारत के लिए वास्तविक समय पूर्वानुमान, वर्षा जोखिम, आंधी-तूफान चेतावनी, खेल, फसल परामर्श और सुरक्षित यात्रा का सटीक विश्लेषण प्रदान करता हूँ।\n\nनीचे दिए गए किसी भी विषय पर क्लिक करें या अपना प्रश्न पूछें!`;
       case 'mr':
-        return `नमस्कार! मी **WeatherGPT** आहे, आपला एआई हवामान व व्यावहारिक निर्णय सहाय्यक.\n\nमी **${loc}** साठी थेट हवामान अंदाज, पावसाचा धोका आणि दैनंदिन कामांविषयी (कपडे वाळवणे, गाडी धुणे, शेती कामे, प्रवास) थेट अचूक सल्ला देऊ शकतो. मी कशी मदत करू?`;
+        return `नमस्कार! मी **WeatherGPT** आहे, आपला एआई हवामान व व्यावहारिक निर्णय सहाय्यक.\n\nमी **${loc}** साठी थेट हवामान अंदाज, पावसाचा धोका, वादळ चेतावणी आणि शेती व प्रवास मार्गदर्शन करतो. मी कशी मदत करू?`;
       case 'ta':
-        return `வணக்கம்! நான் **WeatherGPT** — உங்கள் செயற்கை நுண்ணறிவு வானிலை மற்றும் நடைமுறை முடிவெடுக்கும் உதவியாளர்.\n\nநான் **${loc}** பகுதிக்கான மழை வாய்ப்பு, துணி காயவைக்க உகந்த நேரம், விவசாய அறுவடை மற்றும் பயண வழிகாட்டுதலை வழங்க முடியும். உங்களுக்கு என்ன தகவல் வேண்டும்?`;
+        return `வணக்கம்! நான் **WeatherGPT** — உங்கள் செயற்கை நுண்ணறிவு வானிலை மற்றும் நடைமுறை முடிவெடுக்கும் உதவியாளர்.\n\nநான் **${loc}** பகுதிக்கான மழை வாய்ப்பு, புயல் எச்சரிக்கை, விவசாய வழிகாட்டுதல் மற்றும் பயண பாதுகாப்பை வழங்க முடியும். உங்களுக்கு என்ன தகவல் வேண்டும்?`;
       default:
-        return `Hello! I am **WeatherGPT** — your AI assistant for real-time weather forecasting and actionable daily decisions.\n\nI analyze physics telemetry, satellite hydrological archives, and ML impact models for **${loc}** to give you direct solutions: whether you can dry clothes, wash your car, play cricket, harvest crops, paint walls, or drive through highway fog.\n\nTap any category below or ask your question!`;
+        return `Hello! I am **WeatherGPT** — your AI assistant for real-time weather intelligence and multi-hazard risk analysis.\n\nI analyze physics telemetry, satellite hydrological archives, and ML impact models for **${loc}** to give you direct, calibrated answers: rain probability, thunderstorm alerts, outdoor sports suitability, crop advisories, and highway transit safety.\n\nTap any category below or ask your question!`;
     }
   };
 
@@ -112,7 +114,9 @@ export default function ChatPage({
       id: userMsgId,
       sender: 'user',
       text: text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      status: 'sending',
+      situation: 'NORMAL'
     };
 
     setMessages(prev => [...prev, newUserMsg]);
@@ -126,6 +130,10 @@ export default function ChatPage({
         language: language,
         persona: selectedPersona
       });
+
+      const situation = response.verdict 
+        || (response.risk_assessment?.risk_level) 
+        || (response.weather_summary?.rain_today > 2.5 ? 'CAUTION' : 'RECOMMENDED');
 
       const botMsg = {
         id: (Date.now() + 1).toString(),
@@ -145,7 +153,7 @@ export default function ChatPage({
         weatherSummary: response.weather_summary
       };
 
-      setMessages(prev => [...prev, botMsg]);
+      setMessages(prev => prev.map(m => m.id === userMsgId ? { ...m, status: 'sended', situation } : m).concat(botMsg));
     } catch (error) {
       console.error('Chat error:', error);
       const errorMsg = {
@@ -155,7 +163,7 @@ export default function ChatPage({
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         sources: ['WeatherGPT Offline Fallback Engine']
       };
-      setMessages(prev => [...prev, errorMsg]);
+      setMessages(prev => prev.map(m => m.id === userMsgId ? { ...m, status: 'sended', situation: 'CAUTION' } : m).concat(errorMsg));
     } finally {
       setIsLoading(false);
     }
@@ -227,6 +235,26 @@ export default function ChatPage({
     }
   };
 
+  // Situational User Bubble Color Styling
+  const getUserBubbleStyle = (msg) => {
+    if (msg.status !== 'sended') {
+      return 'bg-sky-600 text-white font-medium shadow-md shadow-sky-600/15 border border-sky-500';
+    }
+    switch (msg.situation) {
+      case 'NOT_RECOMMENDED':
+      case 'SEVERE':
+        return 'bg-gradient-to-r from-sky-700 via-slate-800 to-rose-700 text-white font-medium shadow-md shadow-rose-900/25 border border-rose-400/50';
+      case 'CAUTION':
+      case 'HIGH':
+      case 'MODERATE':
+        return 'bg-gradient-to-r from-sky-700 via-slate-800 to-amber-700 text-white font-medium shadow-md shadow-amber-900/25 border border-amber-400/50';
+      case 'RECOMMENDED':
+        return 'bg-gradient-to-r from-sky-700 via-slate-800 to-emerald-700 text-white font-medium shadow-md shadow-emerald-900/25 border border-emerald-400/50';
+      default:
+        return 'bg-gradient-to-r from-sky-600 to-blue-700 text-white font-medium shadow-md shadow-sky-600/15 border border-sky-500';
+    }
+  };
+
   // Rich formatted text rendering
   const renderFormattedText = (rawText) => {
     if (!rawText) return null;
@@ -282,11 +310,11 @@ export default function ChatPage({
   // Interactive Categorized Prompt Presets
   const promptCategories = [
     { id: 'ALL', label: language === 'hi' ? '🔥 प्रमुख प्रश्न' : '🔥 Top Queries' },
-    { id: 'LAUNDRY', label: language === 'hi' ? '🧺 कपड़े सुखाना' : '🧺 Laundry' },
-    { id: 'CAR', label: language === 'hi' ? '🚗 कार धुलाई' : '🚗 Car Wash' },
-    { id: 'SPORTS', label: language === 'hi' ? '🏏 खेल व फिटनेस' : '🏏 Sports' },
-    { id: 'FARM', label: language === 'hi' ? '🌾 फसल व कटाई' : '🌾 Farming' },
-    { id: 'PAINT', label: language === 'hi' ? '🎨 पुताई व निर्माण' : '🎨 Painting' },
+    { id: 'RAIN', label: language === 'hi' ? '🌧️ वर्षा व छाता' : '🌧️ Rain & Storm' },
+    { id: 'SPORTS', label: language === 'hi' ? '🏏 खेल व आउटडोर' : '🏏 Sports' },
+    { id: 'FARM', label: language === 'hi' ? '🌾 फसल व कृषि' : '🌾 Farming' },
+    { id: 'HEAT_COLD', label: language === 'hi' ? '☀️ गर्मी व स्वास्थ्य' : '☀️ Heat & Health' },
+    { id: 'PAINT', label: language === 'hi' ? '🎨 निर्माण व पुताई' : '🎨 Construction' },
     { id: 'DRIVE', label: language === 'hi' ? '🌫️ कोहरा व यात्रा' : '🌫️ Highway Fog' },
     { id: 'FORECAST', label: language === 'hi' ? '📅 4-दिवसीय मौसम' : '📅 Outlook' },
   ];
@@ -326,26 +354,29 @@ export default function ChatPage({
           ];
         default: // GENERAL
           return [
-            isHi ? `क्या आज ${loc} में कपड़े बाहर सुखा सकते हैं?` : `Can I dry clothes outside today in ${loc}?`,
-            isHi ? `क्या मुझे आज ${loc} में कार धोनी चाहिए या बारिश होगी?` : `Should I wash my car today in ${loc}?`,
-            isHi ? `क्या कल बारिश होगी? कितने प्रतिशत संभावना है?` : `Will it rain tomorrow in ${loc}? What is the exact probability?`,
-            isHi ? `क्या कल बाहर निकलते समय छाता साथ रखना चाहिए?` : `Do I need to carry an umbrella tomorrow in ${loc}?`,
-            isHi ? `क्या कल ${loc} में क्रिकेट खेल सकते हैं?` : `Can we play cricket tomorrow in ${loc}?`,
-            isHi ? `क्या कल सुबह हाईवे पर कोहरा होगा?` : `Is there morning fog for driving in ${loc}?`
+            isHi ? `क्या आज या कल ${loc} में बारिश होगी? कितने प्रतिशत संभावना है?` : `Will it rain today or tomorrow in ${loc}? What is the exact probability?`,
+            isHi ? `क्या ${loc} में आंधी-तूफान या तेज हवाओं की चेतावनी है?` : `Is there any thunderstorm or severe weather alert in ${loc}?`,
+            isHi ? `क्या आज बाहर निकलते समय छाता साथ रखना चाहिए?` : `Do I need to carry an umbrella outdoors today in ${loc}?`,
+            isHi ? `क्या कल ${loc} में क्रिकेट या खेलकूद खेल सकते हैं?` : `Can we play cricket or outdoor sports tomorrow in ${loc}?`,
+            isHi ? `क्या कल सुबह हाईवे पर कोहरा या यात्रा में कोई जोखिम है?` : `Is there morning fog for highway travel in ${loc}?`,
+            isHi ? `आगामी 4 दिनों का मौसम पूर्वानुमान व तापमान कैसा रहेगा?` : `What is the 4-day weather trajectory and temperature outlook for ${loc}?`
           ];
       }
     }
 
     switch (catId) {
-      case 'LAUNDRY':
+      case 'RAIN':
         return [
-          isHi ? `क्या आज ${loc} में कपड़े बाहर सुखा सकते हैं?` : `Can I dry clothes outside today in ${loc}?`,
-          isHi ? `कपड़े सूखने में कितना समय लगेगा?` : `How many hours will laundry take to dry today?`
+          isHi ? `क्या आज या कल ${loc} में बारिश होगी? सटीक संभावना क्या है?` : `Will it rain today or tomorrow in ${loc}? What is the exact probability?`,
+          isHi ? `क्या आज छाता साथ रखना आवश्यक है?` : `Do I need to carry an umbrella outdoors today in ${loc}?`,
+          isHi ? `क्या अगले 48 घंटों में भारी वर्षा या जलभराव का खतरा है?` : `Is there risk of heavy precipitation or waterlogging in next 48 hours?`,
+          isHi ? `आज बारिश होने पर कितने घंटे तक पानी बरसने का अनुमान है?` : `How many precipitation hours are predicted if it rains today?`
         ];
-      case 'CAR':
+      case 'HEAT_COLD':
         return [
-          isHi ? `क्या मुझे आज ${loc} में कार धोनी चाहिए?` : `Should I wash my car today in ${loc}?`,
-          isHi ? `क्या अगले 2 दिनों में बारिश से गाड़ी गंदी होगी?` : `Will rain in next 48 hours ruin a car wash?`
+          isHi ? `दोपहर में लू (Heat Stress) या धूप का क्या स्तर रहेगा?` : `What is the heat index and thermal stress this afternoon in ${loc}?`,
+          isHi ? `सुबह वॉक या दौड़ के लिए तापमान कब सबसे अनुकूल रहेगा?` : `What is the optimal temperature window for morning exercise in ${loc}?`,
+          isHi ? `शीतलहर (Cold Wave) से बचाव के लिए क्या सावधानी बरतें?` : `What precautions are needed for cold wave or nighttime chill in ${loc}?`
         ];
       case 'SPORTS':
         return [
@@ -406,8 +437,8 @@ export default function ChatPage({
             </h2>
             <p className="text-[11px] text-slate-500">
               {language === 'hi' 
-                ? 'मौसम पूर्वानुमान, एमएल जोखिम व व्यावहारिक निर्णय (कपड़े, कार, खेल, खेती, पेंट, यात्रा)'
-                : 'Real-time forecast, ML impact predictions & practical solutions (Laundry, Car Wash, Sports, Farming, Paint, Travel)'
+                ? 'मौसम पूर्वानुमान, एमएल जोखिम व व्यावहारिक निर्णय (वर्षा, आंधी, खेल, खेती, यात्रा, निर्माण)'
+                : 'Real-time forecast, ML impact predictions & actionable directives (Rain, Storms, Sports, Farming, Transit)'
               }
             </p>
           </div>
@@ -475,10 +506,10 @@ export default function ChatPage({
               )}
 
               <div
-                className={`max-w-[88%] sm:max-w-[82%] rounded-2xl p-4 text-xs leading-relaxed shadow-sm ${
+                className={`max-w-[88%] sm:max-w-[82%] rounded-2xl p-4 text-xs leading-relaxed shadow-sm transition-all duration-300 ${
                   isBot
                     ? 'bg-white border border-slate-200 text-slate-800'
-                    : 'bg-sky-600 text-white font-medium shadow-md shadow-sky-600/15'
+                    : getUserBubbleStyle(msg)
                 }`}
               >
                 {/* Structured Decision Card (Bot Only) */}
@@ -591,14 +622,58 @@ export default function ChatPage({
                   </div>
                 )}
 
-                <div className="flex items-center justify-end gap-1 mt-2 text-[10px] text-slate-400">
+                <div className={`flex items-center justify-end gap-1.5 mt-2 text-[10px] ${isBot ? 'text-slate-400' : 'text-white/80'}`}>
                   <Clock className="h-3 w-3" />
                   <span>{msg.timestamp}</span>
+                  {!isBot && (
+                    <span className="flex items-center gap-1 ml-1">
+                      {msg.status === 'sended' ? (
+                        <span className="flex items-center gap-1">
+                          <CheckCheck className={`h-3.5 w-3.5 ${
+                            msg.situation === 'NOT_RECOMMENDED' || msg.situation === 'SEVERE'
+                              ? 'text-rose-300'
+                              : msg.situation === 'CAUTION' || msg.situation === 'MODERATE' || msg.situation === 'HIGH'
+                              ? 'text-amber-300'
+                              : msg.situation === 'RECOMMENDED'
+                              ? 'text-emerald-300'
+                              : 'text-sky-200'
+                          }`} />
+                          <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold uppercase tracking-wider ${
+                            msg.situation === 'NOT_RECOMMENDED' || msg.situation === 'SEVERE'
+                              ? 'bg-rose-500/30 text-rose-100 border border-rose-400/40'
+                              : msg.situation === 'CAUTION' || msg.situation === 'MODERATE' || msg.situation === 'HIGH'
+                              ? 'bg-amber-500/30 text-amber-100 border border-amber-400/40'
+                              : msg.situation === 'RECOMMENDED'
+                              ? 'bg-emerald-500/30 text-emerald-100 border border-emerald-400/40'
+                              : 'bg-sky-500/30 text-sky-100 border border-sky-400/40'
+                          }`}>
+                            {msg.situation === 'NOT_RECOMMENDED' || msg.situation === 'SEVERE'
+                              ? (language === 'hi' ? 'गंभीर' : 'Severe')
+                              : msg.situation === 'CAUTION' || msg.situation === 'MODERATE' || msg.situation === 'HIGH'
+                              ? (language === 'hi' ? 'सतर्क' : 'Caution')
+                              : msg.situation === 'RECOMMENDED'
+                              ? (language === 'hi' ? 'अनुकूल' : 'Favorable')
+                              : (language === 'hi' ? 'सामान्य' : 'Normal')}
+                          </span>
+                        </span>
+                      ) : (
+                        <Check className="h-3.5 w-3.5 text-white/70 animate-pulse" />
+                      )}
+                    </span>
+                  )}
                 </div>
               </div>
 
               {!isBot && (
-                <div className="h-8 w-8 rounded-xl bg-sky-100 border border-sky-200 flex items-center justify-center flex-shrink-0 mt-0.5 text-sky-700 font-bold text-xs">
+                <div className={`h-8 w-8 rounded-xl border flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold shadow-sm transition-all duration-300 ${
+                  msg.situation === 'NOT_RECOMMENDED' || msg.situation === 'SEVERE'
+                    ? 'bg-rose-100 border-rose-300 text-rose-700'
+                    : msg.situation === 'CAUTION' || msg.situation === 'MODERATE' || msg.situation === 'HIGH'
+                    ? 'bg-amber-100 border-amber-300 text-amber-700'
+                    : msg.situation === 'RECOMMENDED'
+                    ? 'bg-emerald-100 border-emerald-300 text-emerald-700'
+                    : 'bg-sky-100 border-sky-200 text-sky-700'
+                }`}>
                   <User className="h-4 w-4" />
                 </div>
               )}
