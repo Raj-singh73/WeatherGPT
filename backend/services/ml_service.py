@@ -16,6 +16,20 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from ml.predict import predict_weather_risk
 
+from datetime import datetime
+from typing import Dict, Any, Optional
+
+def get_meteorological_season(month: int) -> str:
+    """Returns official IMD meteorological season label matching model training."""
+    if month in [12, 1, 2]:
+        return "Winter"
+    elif month in [3, 4, 5]:
+        return "Summer"
+    elif month in [6, 7, 8, 9]:
+        return "Monsoon"
+    else:
+        return "Post-Monsoon"
+
 def assess_risk_from_daily_features(
     location: str,
     lat: float,
@@ -25,14 +39,33 @@ def assess_risk_from_daily_features(
     precipitation: float,
     wind_gust: float,
     climatology: float = 12.0,
-    humidity: float = 65.0
+    humidity: float = 65.0,
+    weather_code: int = 0,
+    date_str: Optional[str] = None
 ) -> Dict[str, Any]:
-    """Helper to predict risk from basic forecast parameters."""
+    """Helper to predict risk from basic forecast parameters with meteorological season grounding."""
     t_mean = (t_max + t_min) / 2.0
     anomaly = (precipitation - climatology) / max(climatology, 0.01)
     
-    # Soil moisture proxy: higher if rain > 20mm
-    soil_moisture = 45.0 + min(precipitation * 0.8, 45.0)
+    # Soil moisture proxy: scales with rain volume
+    soil_moisture = min(95.0, 42.0 + min(precipitation * 0.75, 48.0))
+    
+    # Determine realistic month, day_of_year, and season
+    if date_str:
+        try:
+            dt = datetime.strptime(date_str[:10], "%Y-%m-%d")
+            month = dt.month
+            doy = dt.timetuple().tm_yday
+        except Exception:
+            now = datetime.now()
+            month = now.month
+            doy = now.timetuple().tm_yday
+    else:
+        now = datetime.now()
+        month = now.month
+        doy = now.timetuple().tm_yday
+
+    season = get_meteorological_season(month)
     
     weather_input = {
         "location": location,
@@ -57,13 +90,86 @@ def assess_risk_from_daily_features(
         "temperature_change_24h": 0.0,
         "rainfall_change_24h": precipitation,
         "soil_moisture": soil_moisture,
-        "month": 7,
-        "day_of_year": 195,
-        "season": "Monsoon" if precipitation > 5.0 else "Summer"
+        "weather_code": weather_code,
+        "month": month,
+        "day_of_year": doy,
+        "season": season
     }
     
     return predict_weather_risk(weather_input)
 
 def predict_custom_risk(req_dict: Dict[str, Any]) -> Dict[str, Any]:
-    """Direct inference entry point for POST /api/predict/risk."""
-    return predict_weather_risk(req_dict)
+    """
+    Direct inference entry point for POST /api/predict/risk.
+    Intelligently synchronizes physical features to avoid distorted predictions from partial payloads.
+    """
+    d = dict(req_dict)
+
+    # 1. Temperature synchronization
+    t_max = d.get("temperature_max")
+    t_min = d.get("temperature_min")
+    if t_max is not None and t_min is not None:
+        if d.get("temperature_mean") is None:
+            d["temperature_mean"] = (t_max + t_min) / 2.0
+    elif d.get("temperature_mean") is None:
+        d["temperature_mean"] = 28.0
+
+    if d.get("temperature_max") is None:
+        d["temperature_max"] = d["temperature_mean"] + 3.5
+    if d.get("temperature_min") is None:
+        d["temperature_min"] = d["temperature_mean"] - 4.5
+
+    # 2. Rainfall synchronization
+    precip = float(d.get("precipitation") if d.get("precipitation") is not None else 0.0)
+    d["precipitation"] = precip
+
+    if d.get("rainfall_1d") is None:
+        d["rainfall_1d"] = precip
+
+    r1d = float(d["rainfall_1d"])
+    if d.get("rainfall_3d") is None:
+        d["rainfall_3d"] = round(r1d * 1.5, 1)
+    if d.get("rainfall_7d") is None:
+        d["rainfall_7d"] = round(r1d * 2.2, 1)
+    if d.get("rainfall_30d") is None:
+        d["rainfall_30d"] = round(r1d * 3.5, 1)
+
+    # 3. Climatology & anomaly
+    clim = float(d.get("rainfall_climatology") or 12.0)
+    d["rainfall_climatology"] = clim
+    anomaly = (r1d - clim) / max(clim, 0.01)
+    if d.get("rainfall_anomaly") is None:
+        d["rainfall_anomaly"] = round(anomaly, 3)
+    if d.get("rainfall_anomaly_percent") is None:
+        d["rainfall_anomaly_percent"] = round(anomaly * 100.0, 1)
+
+    # 4. Wind synchronization
+    if d.get("wind_speed") is None:
+        d["wind_speed"] = 15.0
+    if d.get("wind_gust") is None:
+        d["wind_gust"] = round(float(d["wind_speed"]) * 1.5, 1)
+
+    # 5. Soil moisture dynamic derivation
+    if d.get("soil_moisture") is None:
+        d["soil_moisture"] = round(min(95.0, 42.0 + min(r1d * 0.75, 48.0)), 1)
+
+    # 6. Pressure default
+    if d.get("surface_pressure") is None:
+        d["surface_pressure"] = 1005.0 if r1d < 25.0 else 995.0
+
+    # 7. Humidity defaults
+    if d.get("humidity_mean") is None:
+        d["humidity_mean"] = 70.0 if r1d < 10.0 else 85.0
+    if d.get("humidity_max") is None:
+        d["humidity_max"] = min(float(d["humidity_mean"]) + 12.0, 98.0)
+
+    # 8. Date and season
+    now = datetime.now()
+    if d.get("month") is None:
+        d["month"] = now.month
+    if d.get("day_of_year") is None:
+        d["day_of_year"] = now.timetuple().tm_yday
+    if not d.get("season"):
+        d["season"] = get_meteorological_season(d["month"])
+
+    return predict_weather_risk(d)

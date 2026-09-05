@@ -142,34 +142,47 @@ def extract_explainable_factors(input_dict: Dict[str, Any]) -> List[str]:
     t_min = float(input_dict.get("temperature_min", 20.0))
     soil_moisture = float(input_dict.get("soil_moisture", 40.0))
     anomaly = float(input_dict.get("rainfall_anomaly", 0.0))
+    w_code = int(input_dict.get("weather_code", 0))
     
     if rain_1d >= 115.0:
-        factors.append(f"Very heavy rainfall event ({rain_1d} mm/24h)")
+        factors.append(f"Very heavy rainfall event ({rain_1d:.1f} mm/24h)")
     elif rain_1d >= 64.5:
-        factors.append(f"Heavy rainfall forecast ({rain_1d} mm/24h)")
+        factors.append(f"Heavy rainfall forecast ({rain_1d:.1f} mm/24h)")
     elif rain_1d >= 30.0:
-        factors.append(f"Elevated 24h rainfall ({rain_1d} mm)")
+        factors.append(f"Elevated 24h rainfall ({rain_1d:.1f} mm)")
+    elif rain_1d >= 15.0:
+        factors.append(f"Moderate to active rainfall forecast ({rain_1d:.1f} mm/24h)")
+    elif rain_1d >= 2.5:
+        factors.append(f"Light to moderate rainfall expected ({rain_1d:.1f} mm/24h)")
+        
+    if w_code in (95, 96, 99):
+        factors.append("Convective thunderstorm with localized squall/lightning risk")
+    elif w_code in (63, 65, 81, 82):
+        factors.append("Sustained rain showers altering surface ground conditions")
         
     if rain_3d >= 120.0:
-        factors.append(f"High cumulative 3-day rainfall ({rain_3d} mm)")
-    if anomaly > 1.5 and rain_1d > 10.0:
-        factors.append(f"Significant rainfall anomaly ({anomaly*100:+.0f}% above normal)")
+        factors.append(f"High cumulative 3-day rainfall ({rain_3d:.1f} mm)")
+    elif rain_3d >= 40.0:
+        factors.append(f"Cumulative 3-day rain accumulation ({rain_3d:.1f} mm)")
+        
+    if anomaly > 1.5 and rain_1d > 5.0:
+        factors.append(f"Significant rainfall anomaly ({anomaly*100:+.0f}% above seasonal normal)")
         
     if wind_gust >= 65.0:
-        factors.append(f"Severe gale wind gusts ({wind_gust} km/h)")
+        factors.append(f"Severe gale wind gusts ({wind_gust:.1f} km/h)")
     elif wind_gust >= 45.0:
-        factors.append(f"Strong gusty winds ({wind_gust} km/h)")
+        factors.append(f"Strong gusty winds ({wind_gust:.1f} km/h)")
         
     if pressure < 985.0:
-        factors.append(f"Deep barometric pressure depression ({pressure} hPa)")
+        factors.append(f"Deep barometric pressure depression ({pressure:.1f} hPa)")
         
     if t_max >= 44.0:
-        factors.append(f"Extreme heatwave temperature ({t_max}°C)")
+        factors.append(f"Extreme heatwave temperature ({t_max:.1f}°C)")
     elif t_min <= 5.0:
-        factors.append(f"Severe cold wave temperature ({t_min}°C)")
+        factors.append(f"Severe cold wave temperature ({t_min:.1f}°C)")
         
-    if soil_moisture >= 75.0 and rain_1d > 20.0:
-        factors.append(f"Saturated soil moisture ({soil_moisture}%) elevating waterlogging risk")
+    if soil_moisture >= 75.0 and rain_1d > 10.0:
+        factors.append(f"Saturated soil moisture ({soil_moisture:.0f}%) elevating waterlogging risk")
         
     if not factors:
         factors.append("All meteorological parameters within normal seasonal thresholds")

@@ -32,13 +32,16 @@ export default function DashboardPage({
   
   // Calculate ML risk features from today's forecast/current weather
   const todayRisk = forecastDays[0] || {};
+  const todayRain = todayRisk.precipitation_sum || 0.0;
+  const todayRainProb = todayRisk.precipitation_probability_max ?? current.precipitation_probability;
+  const effectiveRain = Math.max(current.precipitation || 0.0, todayRain);
   const riskScore = Number.isFinite(todayRisk.risk_score) ? todayRisk.risk_score : 22.0;
   const riskLevel = todayRisk.risk_level || 'LOW';
   const riskConfidence = Number.isFinite(todayRisk.confidence) ? Math.min(todayRisk.confidence, 0.88) : 0.84;
   const riskFactors = (Array.isArray(todayRisk.key_factors) && todayRisk.key_factors.length > 0)
     ? todayRisk.key_factors
     : [
-        current.precipitation > 20 ? `Active precipitation (${current.precipitation} mm)` : 'Atmospheric precipitation within seasonal bounds',
+        effectiveRain > 2.5 ? `Active precipitation forecast (${effectiveRain.toFixed(1)} mm)` : 'Atmospheric precipitation within seasonal bounds',
         current.wind_gust > 40 ? `Elevated gusts (${current.wind_gust} km/h)` : 'Wind gusts within normal velocity profile',
         'HistGradientBoosting Decision Ensemble assessment'
       ];
@@ -168,16 +171,19 @@ export default function DashboardPage({
             <CloudRain className="h-4 w-4 text-sky-600" />
           </div>
           <div className="text-2xl sm:text-3xl font-black text-slate-900 flex items-baseline gap-2">
-            <span>{current.precipitation !== undefined ? `${current.precipitation} mm` : '0.0 mm'}</span>
-            {current.precipitation_probability !== undefined && (
+            <span>{current.precipitation !== undefined ? `${Number(current.precipitation).toFixed(1)} mm` : '0.0 mm'}</span>
+            {todayRainProb !== undefined && (
               <span className="text-xs font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200">
-                {current.precipitation_probability}% prob
+                {Math.round(todayRainProb)}% prob
               </span>
             )}
           </div>
-          <p className="text-[11px] text-slate-600 mt-1 truncate font-medium">
-            {current.precipitation_intensity || current.weather_description || 'No Rain (Dry)'}
-          </p>
+          <div className="text-[11px] text-slate-600 mt-1 truncate font-medium flex items-center justify-between">
+            <span>{current.precipitation_intensity || todayRisk.precipitation_category || (effectiveRain > 0 ? 'Light/Moderate Rain' : 'No Rain (Dry)')}</span>
+            {todayRain > 0 && current.precipitation === 0 && (
+              <span className="text-sky-700 font-bold ml-1">Today: {todayRain.toFixed(1)} mm</span>
+            )}
+          </div>
         </div>
 
         {/* Humidity */}
@@ -234,7 +240,7 @@ export default function DashboardPage({
             keyFactors={riskFactors}
             recommendation={riskRecommendation}
             metrics={{
-              precipitation: current.precipitation || 0,
+              precipitation: effectiveRain,
               wind_gust: current.wind_gust || 18,
               temperature: current.temperature || 28,
               surface_pressure: current.surface_pressure || 1008,
