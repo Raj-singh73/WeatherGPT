@@ -887,6 +887,8 @@ export default function ChatPage({
       <div className="bg-white border border-slate-300 rounded-2xl p-2 shadow-md flex items-center space-x-2">
         <VoiceController
           language={language}
+          location={location}
+          onTranscriptUpdate={(transcript) => setInputMessage(transcript)}
           onSpeechRecognized={(speechText) => {
             setInputMessage(speechText);
             handleSendMessage(speechText);

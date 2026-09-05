@@ -21,6 +21,28 @@ from services.multilingual_service import (
 
 router = APIRouter(prefix="/api/chat", tags=["Chatbot"])
 
+import sys
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
+def safe_voice_print(*args, **kwargs):
+    """Safely prints to stdout without raising UnicodeEncodeError on Windows charmap consoles."""
+    try:
+        print(*args, **kwargs)
+    except (UnicodeEncodeError, UnicodeError):
+        try:
+            safe_args = [
+                arg.encode('ascii', errors='backslashreplace').decode('ascii') if isinstance(arg, str) else arg
+                for arg in args
+            ]
+            print(*safe_args, **kwargs)
+        except Exception:
+            pass
+
 def convert_audio_to_16k_wav(audio_bytes: bytes) -> bytes:
     """Converts browser audio (WebM, Opus, OGG, WAV, MP4) to 16kHz mono 16-bit PCM WAV bytes using PyAV."""
     try:
@@ -37,12 +59,26 @@ def convert_audio_to_16k_wav(audio_bytes: bytes) -> bytes:
             wav_out.setnchannels(1)
             wav_out.setsampwidth(2)
             wav_out.setframerate(16000)
-            for frame in container.decode(audio_stream):
-                for resampled_frame in resampler.resample(frame):
+            try:
+                for frame in container.decode(audio_stream):
+                    for resampled_frame in resampler.resample(frame):
+                        wav_out.writeframes(resampled_frame.to_ndarray().tobytes())
+            except Exception as decode_err:
+                safe_voice_print(f"[VOICE] Partial decode frame note: {decode_err}")
+            
+            try:
+                # Flush resampler buffer
+                for resampled_frame in resampler.resample(None):
                     wav_out.writeframes(resampled_frame.to_ndarray().tobytes())
-        return out_io.getvalue()
+            except Exception:
+                pass
+
+        val = out_io.getvalue()
+        if len(val) > 44:
+            return val
+        return audio_bytes
     except Exception as e:
-        print(f"[VOICE] PyAV conversion notice: {e}. Using raw audio bytes.")
+        safe_voice_print(f"[VOICE] PyAV conversion notice: {e}. Using raw audio bytes.")
         return audio_bytes
 
 def transcribe_multi_lingual_audio(wav_pcm_bytes: bytes, requested_lang: str = "auto") -> Tuple[str, str]:
@@ -53,21 +89,27 @@ def transcribe_multi_lingual_audio(wav_pcm_bytes: bytes, requested_lang: str = "
     import speech_recognition as sr
 
     r = sr.Recognizer()
-    r.energy_threshold = 120 # High sensitivity to soft speech
+    r.energy_threshold = 100  # High sensitivity to detect soft spoken voice
     r.dynamic_energy_threshold = True
 
     # Priority candidate languages
     req_clean = (requested_lang or "").strip().lower()
+    full_code = None
     if req_clean and req_clean not in ["auto", ""]:
-        # Map short codes e.g. 'hi' -> 'hi-IN'
-        full_code = requested_lang if "-" in requested_lang else f"{requested_lang}-IN"
-        candidates = [full_code]
+        full_code = req_clean if "-" in req_clean else f"{req_clean}-IN"
+
+    # All supported Indian language codes
+    all_langs = ["hi-IN", "en-IN", "mr-IN", "bn-IN", "ta-IN", "te-IN", "gu-IN"]
+    if full_code and full_code in all_langs:
+        # Put requested language first, followed by others as fallback
+        candidates = [full_code] + [l for l in all_langs if l != full_code]
+    elif full_code:
+        candidates = [full_code] + all_langs
     else:
-        # Check Hindi and English first, followed by major Indian languages
-        candidates = ["hi-IN", "en-IN", "mr-IN", "bn-IN", "ta-IN", "te-IN", "gu-IN"]
+        candidates = all_langs
 
     best_text = ""
-    best_lang = "hi-IN"
+    best_lang = full_code or "hi-IN"
     best_score = -1.0
 
     def try_candidate(lang_code):
@@ -86,7 +128,7 @@ def transcribe_multi_lingual_audio(wav_pcm_bytes: bytes, requested_lang: str = "
                         if lang_code == "hi-IN" and any('\u0900' <= c <= '\u097F' for c in clean_txt):
                             score += 35
                         elif lang_code == "mr-IN" and any('\u0900' <= c <= '\u097F' for c in clean_txt):
-                            score += 30
+                            score += 35
                         elif lang_code == "bn-IN" and any('\u0980' <= c <= '\u09FF' for c in clean_txt):
                             score += 35
                         elif lang_code == "ta-IN" and any('\u0B80' <= c <= '\u0BFF' for c in clean_txt):
@@ -102,8 +144,8 @@ def transcribe_multi_lingual_audio(wav_pcm_bytes: bytes, requested_lang: str = "
             pass
         return None
 
-    # Run candidates concurrently
-    with concurrent.futures.ThreadPoolExecutor(max_workers=min(4, len(candidates))) as executor:
+    # Run candidates concurrently with ThreadPoolExecutor
+    with concurrent.futures.ThreadPoolExecutor(max_workers=min(5, len(candidates))) as executor:
         futures = [executor.submit(try_candidate, lc) for lc in candidates]
         for f in concurrent.futures.as_completed(futures):
             res = f.result()
@@ -178,21 +220,21 @@ async def chat_with_voice(
     if audio:
         try:
             content = await audio.read()
-            print(f"[VOICE] Received audio payload: {len(content)} bytes, requested lang: {language}")
+            safe_voice_print(f"[VOICE] Received audio payload: {len(content)} bytes, requested lang: {language}")
             if len(content) > 300:
                 wav_pcm_bytes = convert_audio_to_16k_wav(content)
                 text, detected = transcribe_multi_lingual_audio(wav_pcm_bytes, requested_lang=language)
                 if text:
                     user_query = text
                     detected_lang_code = detected
-                    print(f"[VOICE] Audio Transcribed ({detected_lang_code}) -> '{user_query}'")
+                    safe_voice_print(f"[VOICE] Audio Transcribed ({detected_lang_code}) -> '{user_query}'")
         except Exception as e:
-            print(f"[WARN] Audio transcription error: {e}")
+            safe_voice_print(f"[WARN] Audio transcription error: {e}")
 
     # 2. Fallback to typed text or browser interim transcript if audio transcription had silence
     if not user_query and typed_text and typed_text.strip():
         user_query = typed_text.strip()
-        print(f"[VOICE] Using text input fallback -> '{user_query}'")
+        safe_voice_print(f"[VOICE] Using text input fallback -> '{user_query}'")
 
     # 3. Detect Language from transcribed/typed text
     detected_short = detect_language_from_text(user_query) if user_query else "hi"

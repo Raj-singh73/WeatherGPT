@@ -61,6 +61,7 @@ export default function VoiceAssistantModal({
   const [aiAudioUrl, setAiAudioUrl] = useState(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
+  const [isSoundDetected, setIsSoundDetected] = useState(false);
   const [permissionError, setPermissionError] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
 
@@ -121,14 +122,29 @@ export default function VoiceAssistantModal({
     setIsSpeaking(false);
     setIsPlayingAudio(false);
     setAudioLevel(0);
+    setIsSoundDetected(false);
   };
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      // Sync selectedLang with app language if set to auto
+      const langMap = {
+        hi: 'hi-IN',
+        mr: 'mr-IN',
+        bn: 'bn-IN',
+        ta: 'ta-IN',
+        te: 'te-IN',
+        gu: 'gu-IN',
+        en: 'en-IN'
+      };
+      if (language && langMap[language]) {
+        setSelectedLang(langMap[language]);
+      }
+    } else {
       cleanupAll();
     }
     return () => cleanupAll();
-  }, [isOpen]);
+  }, [isOpen, language]);
 
   // Start Hardware Audio Recording + Speech Recognition
   const startRecording = async () => {
@@ -184,7 +200,9 @@ export default function VoiceAssistantModal({
         let sum = 0;
         for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
         const avg = sum / dataArray.length;
-        setAudioLevel(Math.min(100, Math.round(avg * 2.2)));
+        const lvl = Math.min(100, Math.round(avg * 2.2));
+        setAudioLevel(lvl);
+        setIsSoundDetected(lvl > 10);
         animFrameRef.current = requestAnimationFrame(updateLevel);
       };
       updateLevel();
@@ -219,7 +237,18 @@ export default function VoiceAssistantModal({
         const recog = new SpeechRecognition();
         recog.continuous = true;
         recog.interimResults = true;
-        recog.lang = selectedLang === 'auto' ? (navigator.language || 'hi-IN') : selectedLang;
+        
+        const langMap = {
+          hi: 'hi-IN',
+          mr: 'mr-IN',
+          bn: 'bn-IN',
+          ta: 'ta-IN',
+          te: 'te-IN',
+          gu: 'gu-IN',
+          en: 'en-IN'
+        };
+        const appLangCode = langMap[language] || 'hi-IN';
+        recog.lang = selectedLang === 'auto' ? appLangCode : selectedLang;
 
         recog.onresult = (event) => {
           let fullTranscript = '';
@@ -607,9 +636,23 @@ export default function VoiceAssistantModal({
             {/* Recording Timer & Audio Decibel Bars */}
             {isRecording ? (
               <div className="flex flex-col items-center space-y-2">
-                <div className="flex items-center gap-2 text-xs font-mono font-bold text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-200">
-                  <span className="h-2 w-2 rounded-full bg-rose-600 animate-ping"></span>
-                  <span>RECORDING: 00:{recordSeconds < 10 ? `0${recordSeconds}` : recordSeconds} / 00:45</span>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-200">
+                    <span className="h-2 w-2 rounded-full bg-rose-600 animate-ping"></span>
+                    <span>00:{recordSeconds < 10 ? `0${recordSeconds}` : recordSeconds} / 00:45</span>
+                  </div>
+
+                  {isSoundDetected ? (
+                    <div className="flex items-center gap-1.5 text-xs font-extrabold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300 animate-pulse shadow-xs">
+                      <span className="h-2 w-2 rounded-full bg-emerald-600 animate-ping"></span>
+                      <span>🎙️ Sound Detected: Hearing Voice ({audioLevel}%)</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-full border border-amber-300">
+                      <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
+                      <span>🎧 Listening for voice... Speak clearly</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-1.5 h-6">
