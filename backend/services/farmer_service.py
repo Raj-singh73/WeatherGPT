@@ -183,7 +183,8 @@ def _compute_crop_stage_suitability(
     rain_3d: float,
     max_wind: float,
     curr_rh: float,
-    has_thunderstorm: bool
+    has_thunderstorm: bool,
+    is_hi: bool = False
 ) -> Tuple[float, str, str, str]:
     """
     Computes biologically differentiated suitability score, status, primary concern,
@@ -471,18 +472,39 @@ def _compute_crop_stage_suitability(
     if not is_in_season:
         weather_concern += " (Off-Season Regime)"
 
-    if has_thunderstorm or max_wind >= 32.0:
-        stress_warning = f"Severe weather alert: Thunderstorm & wind gusts ({max_wind:.1f} km/h) risk lodging in {crop}."
-    elif max_temp > crit_heat:
-        stress_warning = f"Extreme thermal stress: Peak temp ({max_temp:.1f}°C) exceeds {crop} threshold ({crit_heat}°C)."
-    elif max_temp > opt_max:
-        stress_warning = f"Elevated temperature: Forecast ({max_temp:.1f}°C) is above optimal {crop} band ({opt_min}-{opt_max}°C)."
-    elif min_temp < frost_lim:
-        stress_warning = f"Chill injury risk: Night temperature ({min_temp:.1f}°C) near frost limit ({frost_lim}°C)."
-    elif rain_3d > 25.0 and crop != "Rice":
-        stress_warning = f"Hydrological saturation: Imminent {rain_3d:.1f} mm rain elevates root asphyxiation risk for {crop}."
+    if is_hi:
+        crop_hi = profile.get("name_hi", crop)
+        if max_temp > crit_heat:
+            stress_warning = f"अत्यधिक तापमान तनाव: दोपहर का तापमान ({max_temp:.1f}°C) {crop_hi} की सहनशीलता सीमा ({crit_heat}°C) से अधिक है। वाष्पोत्सर्जन व ताप तनाव से बचाव हेतु खेत में नमी बनाए रखें।"
+        elif max_temp > opt_max:
+            stress_warning = f"तापमान में वृद्धि: दोपहर का तापमान ({max_temp:.1f}°C) {crop_hi} के अनुकूलतम दायरे ({opt_min}-{opt_max}°C) से अधिक है। शाम को हल्की सिंचाई देकर शीतलन प्रभाव बनाएं।"
+        elif min_temp < frost_lim:
+            stress_warning = f"शीत लहर / पाला जोखिम: रात का तापमान ({min_temp:.1f}°C) {crop_hi} की पाला सीमा ({frost_lim}°C) के निकट है।"
+        elif min_temp < opt_min:
+            stress_warning = f"ठंडी रातें: रात का न्यूनतम तापमान ({min_temp:.1f}°C) {crop_hi} की अनुकूल सीमा ({opt_min}-{opt_max}°C) से कम है।"
+        else:
+            stress_warning = f"अनुकूल तापमान व्यवस्था: तापमान ({min_temp:.1f}°C से {max_temp:.1f}°C) {crop_hi} की जैविक बढ़वार के अनुकूलतम दायरे ({opt_min}-{opt_max}°C) में है।"
+
+        if max_wind >= 38.0:
+            stress_warning += f" (सावधानी: {max_wind:.1f} किमी/घंटा की तेज आंधी से फसल गिरने का जोखिम है।)"
+        elif has_thunderstorm and max_wind >= 30.0:
+            stress_warning += f" (सावधानी: गरज-चमक व {max_wind:.1f} किमी/घंटा हवाओं से जल निकास खुला रखें।)"
     else:
-        stress_warning = f"Meteorological conditions stable for {crop} ({min_temp:.1f}°C to {max_temp:.1f}°C)."
+        if max_temp > crit_heat:
+            stress_warning = f"Extreme thermal stress: Peak daytime temperature ({max_temp:.1f}°C) exceeds {crop} tolerance threshold ({crit_heat}°C). High transpiration and pollen desiccation risk."
+        elif max_temp > opt_max:
+            stress_warning = f"Elevated temperature: Forecast high ({max_temp:.1f}°C) is above optimal {crop} band ({opt_min}–{opt_max}°C). Ensure light watering to alleviate heat stress."
+        elif min_temp < frost_lim:
+            stress_warning = f"Chill/frost injury risk: Night temperature ({min_temp:.1f}°C) approaches frost limit ({frost_lim}°C)."
+        elif min_temp < opt_min:
+            stress_warning = f"Cool night temperatures: Night minimum ({min_temp:.1f}°C) is below optimal {crop} band ({opt_min}–{opt_max}°C)."
+        else:
+            stress_warning = f"Favorable thermal regime: Temperatures ({min_temp:.1f}°C to {max_temp:.1f}°C) remain within optimal physiological band ({opt_min}–{opt_max}°C) for {crop}."
+
+        if max_wind >= 38.0:
+            stress_warning += f" (Note: Strong wind gusts of {max_wind:.1f} km/h risk mechanical lodging in standing canopy)."
+        elif has_thunderstorm and max_wind >= 30.0:
+            stress_warning += f" (Note: Thunderstorm activity and wind gusts of {max_wind:.1f} km/h require propping/drainage checks)."
 
     return suitability_score, status, weather_concern, stress_warning
 
@@ -643,7 +665,13 @@ def _generate_crop_stage_narrative(
     if sp_factor:
         why_factors.append(sp_factor)
 
-    if has_thunderstorm:
+    if max_wind >= 35.0:
+        why_factors.append(
+            f"तेज आंधी व हवा के झोंके ({max_wind:.1f} किमी/घंटा) खड़ी फसल में गिरने (Lodging) का जोखिम पैदा कर सकते हैं।"
+            if is_hi else
+            f"High wind gusts ({max_wind:.1f} km/h) threaten mechanical lodging in standing crops."
+        )
+    elif has_thunderstorm and max_wind >= 28.0:
         why_factors.append(
             f"गरज-चमक व तेज हवाएं ({max_wind:.1f} किमी/घंटा) कृषि कार्यों में बाधा डाल सकती हैं।"
             if is_hi else
@@ -651,7 +679,7 @@ def _generate_crop_stage_narrative(
         )
     else:
         why_factors.append(
-            f"हवा की गति ({max_wind:.1f} किमी/घंटा) सामान्य है और छिड़काव व सिंचाई के लिए उपयुक्त है।"
+            f"हवा की गति ({max_wind:.1f} किमी/घंटा) शांत व कृषि कार्यों के लिए सुरक्षित है।"
             if is_hi else
             f"Wind speed ({max_wind:.1f} km/h) is calm to moderate, favoring scheduled intercultural and spray operations."
         )
@@ -915,9 +943,9 @@ def generate_farmer_advisory(req: FarmerAdvisoryRequest) -> FarmerAdvisoryRespon
     min_temp_ahead = min((d.temperature_min for d in forecast.forecast_days[:3]), default=20.0)
     max_wind_ahead = max((d.wind_speed_max for d in forecast.forecast_days[:3]), default=12.0)
 
-    # Check for thunderstorm / severe weather codes in forecast
-    severe_weather_codes = {80, 81, 82, 85, 86, 95, 96, 99}
-    has_thunderstorm = any(d.weather_code in severe_weather_codes for d in forecast.forecast_days[:3])
+    # Check for genuine thunderstorm codes in forecast (WMO 95: thunderstorm, 96: with slight hail, 99: with heavy hail)
+    thunderstorm_codes = {95, 96, 99}
+    has_thunderstorm = any(d.weather_code in thunderstorm_codes for d in forecast.forecast_days[:3])
     curr_rh = getattr(current.current, 'relative_humidity', 65.0)
 
     # 3. Seasonality evaluation
@@ -946,7 +974,8 @@ def generate_farmer_advisory(req: FarmerAdvisoryRequest) -> FarmerAdvisoryRespon
         rain_3d=three_day_rain,
         max_wind=max_wind_ahead,
         curr_rh=curr_rh,
-        has_thunderstorm=has_thunderstorm
+        has_thunderstorm=has_thunderstorm,
+        is_hi=is_hi
     )
 
     # 5. Generate tailored crop-stage narratives (Recommendation, Irrigation, Precautions, Why-Factors)
