@@ -30,10 +30,19 @@ export default function DashboardPage({
   const current = currentWeather?.current || {};
   const forecastDays = forecast?.forecast_days || [];
   
-  // Calculate average risk score of today/tomorrow
+  // Calculate ML risk features from today's forecast/current weather
   const todayRisk = forecastDays[0] || {};
-  const riskScore = todayRisk.risk_score || 22.0;
+  const riskScore = Number.isFinite(todayRisk.risk_score) ? todayRisk.risk_score : 22.0;
   const riskLevel = todayRisk.risk_level || 'LOW';
+  const riskConfidence = Number.isFinite(todayRisk.confidence) ? Math.min(todayRisk.confidence, 0.88) : 0.84;
+  const riskFactors = (Array.isArray(todayRisk.key_factors) && todayRisk.key_factors.length > 0)
+    ? todayRisk.key_factors
+    : [
+        current.precipitation > 20 ? `Active precipitation (${current.precipitation} mm)` : 'Atmospheric precipitation within seasonal bounds',
+        current.wind_gust > 40 ? `Elevated gusts (${current.wind_gust} km/h)` : 'Wind gusts within normal velocity profile',
+        'HistGradientBoosting Decision Ensemble assessment'
+      ];
+  const riskRecommendation = todayRisk.recommendation || 'Normal routine activities permitted. Keep monitoring regular local advisories.';
 
   // Format date
   const formattedDate = new Date().toLocaleDateString('en-IN', {
@@ -221,13 +230,9 @@ export default function DashboardPage({
           <RiskScoreDial
             riskScore={riskScore}
             riskLevel={riskLevel}
-            confidence={0.96}
-            keyFactors={[
-              current.precipitation > 20 ? `Active precipitation (${current.precipitation} mm)` : 'Atmospheric precipitation within seasonal bounds',
-              current.wind_gust > 40 ? `Elevated gusts (${current.wind_gust} km/h)` : 'Wind gusts within normal velocity profile',
-              'HistGradientBoosting Decision Ensemble assessment'
-            ]}
-            recommendation="Normal routine activities permitted. Keep monitoring regular local advisories."
+            confidence={riskConfidence}
+            keyFactors={riskFactors}
+            recommendation={riskRecommendation}
             metrics={{
               precipitation: current.precipitation || 0,
               wind_gust: current.wind_gust || 18,

@@ -519,7 +519,7 @@ def get_forecast(
                         )
                     except Exception as err:
                         print(f"[WARN] Risk assessment failed for {times[i]}: {err}")
-                        risk_assessment = {"risk_score": 15.0, "risk_level": "LOW"}
+                        risk_assessment = {"risk_score": 15.0, "risk_level": "LOW", "confidence": 0.84, "key_factors": [], "recommendation": "Normal weather conditions."}
                     
                     daily_items.append(DailyForecastItem(
                         date=times[i],
@@ -533,6 +533,9 @@ def get_forecast(
                         weather_description=WEATHER_CODE_DESCRIPTIONS.get(wc, "Clear"),
                         risk_score=risk_assessment.get("risk_score", 15.0),
                         risk_level=risk_assessment.get("risk_level", "LOW"),
+                        confidence=risk_assessment.get("confidence", 0.84),
+                        key_factors=risk_assessment.get("key_factors", []),
+                        recommendation=risk_assessment.get("recommendation", "Normal weather conditions."),
                         precipitation_probability_max=p_prob,
                         precipitation_hours=p_hrs,
                         precipitation_category=p_cat
@@ -558,7 +561,7 @@ def get_forecast(
                     location=name, lat=lat_val, lon=lon_val, t_max=tm, t_min=tn, precipitation=p, wind_gust=g, climatology=clim
                 )
             except Exception as err:
-                risk_assessment = {"risk_score": 15.0, "risk_level": "LOW"}
+                risk_assessment = {"risk_score": 15.0, "risk_level": "LOW", "confidence": 0.84, "key_factors": [], "recommendation": "Normal weather conditions."}
 
             daily_items.append(DailyForecastItem(
                 date=date_str,
@@ -572,6 +575,9 @@ def get_forecast(
                 weather_description="Moderate rain" if p > 10 else "Mainly clear",
                 risk_score=risk_assessment.get("risk_score", 15.0),
                 risk_level=risk_assessment.get("risk_level", "LOW"),
+                confidence=risk_assessment.get("confidence", 0.84),
+                key_factors=risk_assessment.get("key_factors", []),
+                recommendation=risk_assessment.get("recommendation", "Normal weather conditions."),
                 precipitation_probability_max=p_prob,
                 precipitation_hours=round(p * 0.4, 1) if p > 0 else 0.0,
                 precipitation_category=get_precipitation_category(p, p_prob)

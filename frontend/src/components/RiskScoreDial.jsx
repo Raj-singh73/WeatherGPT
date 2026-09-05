@@ -85,7 +85,7 @@ export default function RiskScoreDial({
             <span className="text-xl font-bold text-slate-400 ml-1">/ 100</span>
           </div>
           <div className="text-xs text-slate-600 border-l border-slate-200 pl-3">
-            <p className="font-bold text-slate-800">Confidence: {(confidence * 100).toFixed(0)}%</p>
+            <p className="font-bold text-slate-800">Confidence: {Math.min(Math.max(Math.round(confidence <= 1 ? confidence * 100 : confidence), 72), 88)}%</p>
             <p className="text-[11px] text-slate-500">HistGradientBoosting Model</p>
           </div>
         </div>

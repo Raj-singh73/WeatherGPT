@@ -58,6 +58,9 @@ class DailyForecastItem(BaseModel):
     weather_description: str
     risk_score: float
     risk_level: str
+    confidence: Optional[float] = 0.84
+    key_factors: Optional[List[str]] = []
+    recommendation: Optional[str] = ""
     precipitation_probability_max: Optional[float] = 0.0
     precipitation_hours: Optional[float] = 0.0
     precipitation_category: Optional[str] = "No Rain"
