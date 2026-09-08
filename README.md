@@ -1,203 +1,314 @@
-# WeatherGPT — Conversational AI for Weather Forecasting, Alerts, and Climate Information
-> **Smart India Hackathon 2026 • Problem Statement: SIH26068**  
-> *“From Weather Data to Actionable Decisions.”*
+# WeatherGPT — AI-Powered Weather Decision Support
 
-[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/Frontend-React%2019%20%2B%20Vite-61DAFB.svg?style=flat&logo=react)](https://react.dev)
-[![Tailwind CSS](https://img.shields.io/badge/Styling-Tailwind%20CSS%20v4-38B2AC.svg?style=flat&logo=tailwind-css)](https://tailwindcss.com)
-[![Scikit-Learn](https://img.shields.io/badge/ML-HistGradientBoosting%20%26%20RandomForest-F7931E.svg?style=flat&logo=scikit-learn)](https://scikit-learn.org)
-[![Pytest](https://img.shields.io/badge/Tests-13%20Passed-brightgreen.svg?style=flat)](https://docs.pytest.org)
+> **Smart India Hackathon 2026 • Problem Statement: SIH26068**
 
----
+WeatherGPT is an AI-powered weather decision-support platform that converts weather and climate data into simple, actionable information for citizens, farmers, and disaster-preparedness use cases.
 
-## 1. Project Overview & SIH 2026 Context
-Traditional meteorological systems overwhelm citizens and farmers with raw telemetry—isobars, millibar pressure drops, wind vectors, and numerical precipitation tables. Converting this vast volume of meteorological data into **timely, risk-aware, and stage-specific actions** remains a major national hurdle across India.
+## Features
 
-**WeatherGPT** is a production-grade AI decision-support platform that unifies:
-1. **Real-time NWP & station weather** via the Open-Meteo API.
-2. **Authentic Indian hydrological rainfall archives** (ISRO NRSC VIC model across 75 districts).
-3. **High-resolution spatial gridded rainfall climatology** (IMD 0.25° NetCDF grid).
-4. **131 years of historical cyclone frequency archives** (IMD E-Atlas 1891–2021).
-5. **Machine Learning Weather Impact Engine** (HistGradientBoosting Classifier with 99.08% accuracy & Random Forest continuous score regressor).
-6. **Agronomic Decision Support & Farmer Mode** for major Indian crops (Wheat, Rice, Maize, Cotton, Sugarcane, Pulses).
-7. **Domain-grounded RAG Engine** indexing ICAR, NDMA, and IMD warning color codes.
-8. **Multilingual conversational reasoning** with Web Speech API browser voice interactions.
+* 🌦️ Real-time weather and forecast information
+* 🤖 Conversational AI weather assistant
+* ⚠️ Weather risk assessment
+* 🌾 Farmer Mode with crop-specific advisories
+* 📊 Historical climate and cyclone analytics
+* 🗺️ Interactive weather and geographic visualization
+* 📚 Retrieval-Augmented Generation (RAG) using trusted domain sources
+* 🌐 Multilingual conversational support
+* 🎙️ Browser-based voice interaction
+* 📈 Machine-learning-based weather impact prediction
 
-> [!IMPORTANT]
-> **Data & ML Honesty Guarantee**:
-> Prototype predictions are strictly labeled:  
-> *“AI-generated risk assessment — verify with official authorities for emergency decisions.”*  
-> Real observational datasets (`data/raw/`) are kept separate from synthetic demonstration labels (`data/synthetic/`). All metrics reported reflect actual scikit-learn evaluations without inflated numbers.
+## Technology Stack
 
----
+* **Frontend:** React 19, Vite, Tailwind CSS
+* **Backend:** FastAPI, Python
+* **Machine Learning:** Scikit-learn
+* **Data Processing:** Pandas, NumPy
+* **Visualization:** Recharts, Leaflet
+* **Weather Data:** Open-Meteo
+* **Scientific Data:** IMD, ISRO/NRSC and other publicly available datasets
+* **AI/RAG:** LLM-based reasoning and semantic retrieval
+* **Testing:** Pytest
 
-## 2. System Architecture
+## System Architecture
 
 ```mermaid
 flowchart TD
-    subgraph UI_Layer [Frontend: React 19 + Vite + Tailwind CSS]
-        Navbar[Navigation & Location Switcher]
-        DashView[Command Dashboard & Observation Cards]
-        ChatInterface[Conversational Chat & Web Speech Voice]
-        MapRadar[Interactive Leaflet Geospatial Radar]
-        RiskDialComp[Weather Impact Score Dial 0-100]
-        FarmerMode[Farmer Agro-meteorology Mode]
-        ClimateAnalytics[131-Year Cyclone Historical Trends]
+    subgraph UI["Frontend"]
+        Dashboard["Weather Dashboard"]
+        Chat["AI Chat"]
+        Map["Weather Map"]
+        Risk["Risk Assessment"]
+        Farmer["Farmer Mode"]
+        Climate["Climate Analytics"]
     end
 
-    subgraph API_Layer [FastAPI Asynchronous Backend]
-        API_Weather[/api/weather/current & /forecast]
-        API_Predict[/api/predict/risk]
-        API_Alerts[/api/alerts]
-        API_Farmer[/api/farmer/advisory]
-        API_Climate[/api/climate/trends]
-        API_Chat[/api/chat]
+    subgraph API["FastAPI Backend"]
+        Weather["Weather API"]
+        Predict["Risk Prediction API"]
+        Alerts["Alerts API"]
+        Advisory["Farmer Advisory API"]
+        ClimateAPI["Climate API"]
+        ChatAPI["Chat API"]
     end
 
-    subgraph Core_Services [Intelligence & Decision Engines]
-        Svc_Weather[Weather Service: Open-Meteo API + Local Cache Fallback]
-        Svc_ML[ML Risk Service: HistGradientBoosting Ensemble]
-        Svc_RAG[RAG Semantic Retrieval Engine]
-        Svc_LLM[LLM Engine: Gemini / OpenAI / Physics Synthesis]
-        Svc_Farmer[Crop Phenotype & Field Directive Engine]
-        Svc_Climate[Historical Climate & Spatial NetCDF Extractor]
+    subgraph AI["AI & Decision Engines"]
+        ML["ML Risk Engine"]
+        RAG["RAG Engine"]
+        LLM["LLM Engine"]
+        Agro["Agricultural Advisory Engine"]
+        Analytics["Climate Analytics"]
     end
 
-    subgraph Storage [Scientific Data & Model Artifacts]
-        RawData[(data/raw/ - 4 Real Datasets)]
-        ProcessedData[(data/processed/master_weather_dataset.csv)]
-        ModelArtifacts[(ml/models/weather_risk_model.pkl)]
-        RAGStore[(rag/documents/ Knowledge Repository)]
+    subgraph DATA["Data & Models"]
+        WeatherData["Weather Data"]
+        ClimateData["Climate Data"]
+        Models["ML Models"]
+        Knowledge["Knowledge Repository"]
     end
 
-    UI_Layer <-->|JSON REST API| API_Layer
-    API_Layer --> Core_Services
-    Core_Services --> Storage
+    UI --> API
+    API --> AI
+    AI --> DATA
 ```
 
----
+## Data Sources
 
-## 3. Real Datasets & Scientific Provenance
+WeatherGPT uses publicly available weather, rainfall, climate, and disaster-related datasets for analysis and demonstration.
 
-| Dataset | Provenance Category | File & Size | Records | Coverage | Purpose |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Open-Meteo Station Series** | **REAL DATA** | `open-meteo-20.56N78.93E245m.csv` (1.94 MB) | 40,992 Hourly (2022–2026) | Wardha / Nagpur, MH | Core meteorological baseline (temperature, rain, gusts, pressure) |
-| **ISRO NRSC VIC Hydrological Data** | **REAL DATA** | `nrsc_vic_rainfall.csv` (1.69 MB) | 27,075 Daily (2024) | 75 Districts of UP | District-level multi-day cumulative precipitation & soil moisture |
-| **Historical Cyclone Archive** | **REAL DATA** | `annualFrequency-1891-2021.csv` (4.26 KB) | 131 Years (1891–2021) | Bay of Bengal & Arabian Sea | Long-term macro climate trends & disaster frequencies |
-| **IMD Rainfall Climatology Grid** | **REAL DATA** | `rf_p25_jan_clm.nc` (138.9 KB) | 17,415 Cells (0.25° x 0.25°) | All-India Mainland | Spatial coordinate baseline & rainfall anomaly formula |
-| **WeatherGPT Synthetic Benchmark** | **SYNTHETIC DEMO** | `synthetic_weather_risk_demo.csv` | 12,000 Physically-Simulated Records | Representative Indian Basins | Multi-hazard risk training labels until certified event labels are added |
+| Data Source                  | Purpose                                     |
+| ---------------------------- | ------------------------------------------- |
+| Open-Meteo                   | Current weather and forecasts               |
+| IMD datasets                 | Rainfall and climate information            |
+| ISRO/NRSC datasets           | Hydrological and rainfall analysis          |
+| Historical cyclone records   | Long-term disaster and climate analysis     |
+| Synthetic demonstration data | ML experimentation and prototype evaluation |
 
----
+> **Note:** Dataset availability, coverage, preprocessing, and model performance may change as the project evolves. Refer to the project source code and dataset documentation for implementation details.
 
-## 4. Machine Learning Methodology
+## Machine Learning
 
-### Time-Aware Split & Metric Audit
-Evaluated using a strict **Time-Aware Chronological Split (80% Train, 20% Test)** to ensure zero temporal leakage:
-- **Champion Classifier**: `HistGradientBoostingClassifier`
-  - Real Test Accuracy: **99.08%**
-  - Macro F1-Score: **98.23%**
-  - Macro Precision: **98.03%**
-  - Macro Recall: **98.43%**
-- **Continuous Risk Score Regressor**: `RandomForestRegressor`
-  - Mean Absolute Error (MAE): **0.33 points** (on 0 to 100 scale)
-  - $R^2$ Score: **0.9971**
+The project includes machine-learning models for estimating weather-related impact and risk.
 
-### Feature Importance Ranking
-1. **Precipitation (24h sum)**: 11.60%
-2. **Wind Gust (10m max)**: 11.58%
-3. **Surface Pressure**: 9.74%
-4. **Soil Moisture (API proxy)**: 9.09%
-5. **Rainfall 1-Day**: 8.57%
-6. **Rainfall 30-Day**: 7.49%
-7. **Rainfall 7-Day**: 6.78%
+The current prototype uses:
 
----
+* `HistGradientBoostingClassifier`
+* `RandomForestRegressor`
+* Time-aware train/test evaluation
+* Feature engineering from rainfall, temperature, wind, pressure, and soil-moisture-related variables
 
-## 5. Quickstart & Running Instructions
+Example features include:
+
+* Precipitation
+* Wind gust
+* Surface pressure
+* Recent rainfall
+* Cumulative rainfall
+* Soil-moisture-related indicators
+
+Model performance should be interpreted as **prototype evaluation results**, not as a guarantee of real-world forecasting accuracy.
+
+## Farmer Mode
+
+Farmer Mode converts weather information into crop-specific recommendations.
+
+Supported example crops include:
+
+* Wheat
+* Rice
+* Maize
+* Cotton
+* Sugarcane
+* Pulses
+
+The system can consider:
+
+* Crop
+* Crop growth stage
+* Expected rainfall
+* Temperature
+* Wind conditions
+* Recent weather conditions
+
+Example recommendations include irrigation planning, spraying precautions, and weather suitability for agricultural activities.
+
+> Agricultural recommendations are for informational and demonstration purposes. Farmers should verify important decisions with local agricultural experts and official advisories.
+
+## RAG Knowledge Engine
+
+The RAG component retrieves information from a curated knowledge repository containing domain-relevant material from authoritative sources.
+
+It is designed to provide grounded responses rather than relying only on general-purpose LLM knowledge.
+
+## Project Structure
+
+```text
+WeatherGPT/
+│
+├── backend/
+│   ├── main.py
+│   └── requirements.txt
+│
+├── frontend/
+│   ├── src/
+│   ├── package.json
+│   └── ...
+│
+├── data/
+│   ├── raw/
+│   ├── processed/
+│   └── synthetic/
+│
+├── ml/
+│   └── train.py
+│
+├── src/
+│   └── data/
+│
+├── rag/
+│   └── documents/
+│
+├── tests/
+│
+├── .gitignore
+└── README.md
+```
+
+## Installation
 
 ### Prerequisites
-- Python 3.10+ (Anaconda / Virtualenv)
-- Node.js v18+ & npm
 
-### Step 1: Clone and Setup Workspace
-```powershell
-cd C:\Users\rajs6\.gemini\antigravity\scratch\weathergpt
+* Python 3.10+
+* Node.js 18+
+* npm
+* Git
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/Raj-singh73/WeatherGPT.git
+cd WeatherGPT
 ```
 
-### Step 2: Backend Setup & ML Training
-```powershell
-# 1. Install dependencies
+### 2. Backend Setup
+
+Install Python dependencies:
+
+```bash
 pip install -r backend/requirements.txt
+```
 
-# 2. Inspect raw datasets (generates dataset_report.json)
+Run data-processing scripts if required:
+
+```bash
 python src/data/inspect_datasets.py
-
-# 3. Assemble master dataset & generate synthetic demonstration records
 python src/data/merge_datasets.py
 python src/data/generate_synthetic_data.py
+```
 
-# 4. Train champion ML risk models
+Train the ML models:
+
+```bash
 python ml/train.py
-
-# 5. Run test suite
-pytest tests/
 ```
 
-### Step 3: Launch FastAPI Backend
-```powershell
-python backend/main.py
-# Backend runs at http://localhost:8000
-# Interactive OpenAPI documentation at http://localhost:8000/docs
-```
+Run the tests:
 
-### Step 4: Launch React Frontend
-```powershell
-cd frontend
-npm install
-npm run dev
-# Frontend runs at http://localhost:5173
-```
-
----
-
-## 6. Verification & Test Suite
-Run the 13 automated tests covering data cleaning, NetCDF extraction, ML bounds, and all 9 API routers:
-```powershell
+```bash
 pytest tests/ -v
 ```
 
----
+### 3. Start the Backend
 
-## 7. SIH 2026 Winning Demo Walkthrough
+```bash
+python backend/main.py
+```
 
-### Scenario A: Citizen Heavy Rain & Travel Inquiry (Nagpur)
-1. Select location **Nagpur**.
-2. Dashboard displays real-time weather, 7-day forecast envelopes, and the **Weather Impact Score**.
-3. Open **Ask WeatherGPT** and ask:
-   > *“Will heavy rain affect me tomorrow?”*
-4. System executes:
-   - Intent detection (`RAIN`/`FORECAST`)
-   - Location resolution (`Nagpur`)
-   - Real-time NWP forecast extraction
-   - Feature engineering & ML risk prediction
-   - Transparent response generation citing Open-Meteo, NRSC VIC, and IMD Climatology.
+The FastAPI server will run locally.
 
-### Scenario B: Farmer Sowing Decision (Lucknow)
-1. Navigate to **Farmer Mode**.
-2. Select **Location: Lucknow**, **Crop: Wheat**, **Crop Stage: Sowing**.
-3. Engine calculates **Wheat Weather Suitability: 76/100 (FAVORABLE)**.
-4. Generates stage-specific directives:
-   - Suspends irrigation if rainfall > 15 mm is forecast.
-   - Advises against pesticide spraying during rain windows.
-   - Provides seed treatment guidance with verified scientific citations.
+API documentation is available through the FastAPI Swagger interface at:
 
-### Scenario C: Climate & Disaster Analytics
-1. Navigate to **Climate Analytics**.
-2. Explore interactive Recharts covering **131 years (1891–2021) of cyclone frequency**.
-3. Visualize the 77.8% concentration of cyclones in the Bay of Bengal vs 20.1% in the Arabian Sea.
+```text
+http://localhost:8000/docs
+```
 
----
+### 4. Start the Frontend
 
-## 8. License & Disclaimers
-This project was developed for the **Smart India Hackathon 2026 (Problem Statement SIH26068)**.
-Prototype risk assessments are provided for decision support and emergency preparedness demonstration. Always verify life-critical warnings with official alerts issued by the **India Meteorological Department (IMD)** and **State Disaster Management Authorities (SDMA)**.
+Open another terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The Vite development server will provide the local frontend address in the terminal.
+
+## Demo Scenarios
+
+### 1. Citizen Weather Query
+
+A user can select a location and ask questions such as:
+
+> "Will heavy rain affect me tomorrow?"
+
+The system combines forecast information, feature engineering, risk estimation, and AI-generated explanations to provide an understandable response.
+
+### 2. Agricultural Decision Support
+
+A farmer can select:
+
+* Location
+* Crop
+* Crop growth stage
+
+The system analyzes weather conditions and provides an agricultural advisory based on the selected context.
+
+### 3. Climate Analytics
+
+Users can explore historical climate and cyclone information through interactive visualizations to understand long-term patterns and disaster-related trends.
+
+## Testing
+
+The project includes automated tests covering core data-processing, machine-learning, and API functionality.
+
+Run:
+
+```bash
+pytest tests/ -v
+```
+
+## Security
+
+Do **not** commit API keys, passwords, access tokens, or other credentials to the repository.
+
+Store sensitive configuration in environment variables, for example:
+
+```text
+.env
+```
+
+Make sure `.env` is included in `.gitignore`.
+
+Example:
+
+```gitignore
+.env
+*.key
+*.pem
+__pycache__/
+node_modules/
+```
+
+## Disclaimer
+
+WeatherGPT is a **prototype decision-support system developed for Smart India Hackathon 2026**.
+
+Its predictions and recommendations should not be treated as official weather warnings, emergency instructions, or guaranteed forecasts.
+
+For emergency or life-critical decisions, always verify information with official authorities such as the **India Meteorological Department (IMD)** and relevant disaster-management authorities.
+
+## License
+
+This project is developed as part of the **Smart India Hackathon 2026**.
+
+Add an appropriate open-source license if you intend to make the repository publicly reusable.
