@@ -11,6 +11,7 @@ import LocationHierarchyModal from './components/LocationHierarchyModal';
 import VoiceAssistantModal from './components/VoiceAssistantModal';
 import AuthModal from './components/AuthModal';
 import UserProfileModal from './components/UserProfileModal';
+import ErrorBoundary from './components/ErrorBoundary';
 import api from './api';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { getTranslation } from './translations';
@@ -431,9 +432,11 @@ export default function App() {
         )}
 
         {activeTab === 'climate' && (
-          <ClimatePage
-            language={language}
-          />
+          <ErrorBoundary fallbackMessage="Unable to display the Climate & Cyclone dashboard. Please try reloading below.">
+            <ClimatePage
+              language={language}
+            />
+          </ErrorBoundary>
         )}
 
         {activeTab === 'about' && (

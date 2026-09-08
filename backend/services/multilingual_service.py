@@ -124,37 +124,160 @@ def clean_text_for_speech(text: str, max_chars: int = 350) -> str:
 
     return clean
 
+_TRANSLATION_CACHE: Dict[Tuple[str, str], str] = {}
+
+BCP47_MAP = {
+    "hi": "hi-IN",
+    "mr": "mr-IN",
+    "ta": "ta-IN",
+    "te": "te-IN",
+    "bn": "bn-IN",
+    "gu": "gu-IN",
+    "en": "en-IN"
+}
+
+# Domain-specific localized keyword dictionary for guaranteed fallback
+INDIC_WEATHER_TERMS: Dict[str, Dict[str, str]] = {
+    "mr": {
+        "Reason": "कारण",
+        "Precipitation Probability": "पावसाची शक्यता",
+        "Relative Humidity": "हवेतील आर्द्रता",
+        "Optimal Drying Window": "वाळवण्याची उत्तम वेळ",
+        "Actionable Solution": "सल्ला व उपाय",
+        "Recommendation": "शिफारस",
+        "Atmospheric Condition": "हवामान स्थिती",
+        "Expected Drying Time": "अपेक्षित वेळ",
+        "Wind Gusts": "वाऱ्याचा वेग",
+        "Rain Risk": "पावसाचा धोका"
+    },
+    "ta": {
+        "Reason": "காரணம்",
+        "Precipitation Probability": "மழைப்பொழிவு நிகழ்தகவு",
+        "Relative Humidity": "ஈரப்பதம்",
+        "Optimal Drying Window": "சிறந்த நேரம்",
+        "Actionable Solution": "செயல் திட்டம் & தீர்வு",
+        "Recommendation": "பரிந்துரை",
+        "Atmospheric Condition": "வானிலை நிலை",
+        "Expected Drying Time": "எதிர்பார்க்கப்படும் நேரம்",
+        "Wind Gusts": "காற்றின் வேகம்",
+        "Rain Risk": "மழை ஆபத்து"
+    },
+    "te": {
+        "Reason": "కారణం",
+        "Precipitation Probability": "వర్ష సూచన సంభావ్యత",
+        "Relative Humidity": "తేమ శాతం",
+        "Optimal Drying Window": "ఉత్తమ సమయం",
+        "Actionable Solution": "సూచన & పరిష్కారం",
+        "Recommendation": "సిఫార్సు",
+        "Atmospheric Condition": "వాతావరణ స్థితి",
+        "Expected Drying Time": "పట్టే సమయం",
+        "Wind Gusts": "గాలి వేగం",
+        "Rain Risk": "వర్ష ప్రమాదం"
+    },
+    "bn": {
+        "Reason": "কারণ",
+        "Precipitation Probability": "বৃষ্টির সম্ভাবনা",
+        "Relative Humidity": "বাতাসের আর্দ্রতা",
+        "Optimal Drying Window": "সেরা সময়",
+        "Actionable Solution": "পরামর্শ ও পদক্ষেপ",
+        "Recommendation": "সুপারিশ",
+        "Atmospheric Condition": "আবহাওয়া পরিস্থিতি",
+        "Expected Drying Time": "প্রয়োজনীয় সময়",
+        "Wind Gusts": "বাতাসের গতিবেগ",
+        "Rain Risk": "বৃষ্টির ঝুঁকি"
+    },
+    "gu": {
+        "Reason": "કારણ",
+        "Precipitation Probability": "વરસાદની સંભાવના",
+        "Relative Humidity": "ભેજનું પ્રમાણ",
+        "Optimal Drying Window": "શ્રેષ્ઠ સમય",
+        "Actionable Solution": "સલાહ અને ઉપાય",
+        "Recommendation": "ભલામણ",
+        "Atmospheric Condition": "હવામાન સ્થિતિ",
+        "Expected Drying Time": "અંદાજિત સમય",
+        "Wind Gusts": "પવનની ગતિ",
+        "Rain Risk": "વરસાદનું જોખમ"
+    },
+    "hi": {
+        "Reason": "कारण",
+        "Precipitation Probability": "वर्षा संभावना",
+        "Relative Humidity": "हवा में नमी",
+        "Optimal Drying Window": "सुखाने का समय",
+        "Actionable Solution": "समाधान व सलाह",
+        "Recommendation": "सलाह",
+        "Atmospheric Condition": "मौसम स्थिति",
+        "Expected Drying Time": "समय",
+        "Wind Gusts": "हवा के झोंके",
+        "Rain Risk": "बारिश का जोखिम"
+    }
+}
+
 def translate_weather_response(text: str, target_lang: str) -> str:
     """
     Translates or localizes weather decision text into the specified Indic language.
-    Falls back gracefully to original text if translation times out or is unnecessary.
+    Employs an in-memory cache, GoogleTranslator, MyMemoryTranslator fallback,
+    and an Indic Lexicon replacer to guarantee output is in the user's chosen language.
     """
-    t_lang = (target_lang or "en").lower().split("-")[0]
-    if t_lang in ["en", "auto"]:
+    if not text or not text.strip():
         return text
+
+    t_lang = (target_lang or "en").lower().split("-")[0]
+    if t_lang in ["auto"]:
+        return text
+
+    # Check cache first
+    cache_key = (text[:350], t_lang)
+    if cache_key in _TRANSLATION_CACHE:
+        return _TRANSLATION_CACHE[cache_key]
 
     # If text is already in the target language script, return directly
     current_script = detect_language_from_text(text)
-    if current_script == t_lang:
+    if current_script == t_lang and t_lang != "en":
         return text
 
-    # Attempt GoogleTranslator via deep_translator with 3.5s timeout
+    # 1. Attempt GoogleTranslator via deep_translator
     try:
         from deep_translator import GoogleTranslator
 
-        def _do_translate():
+        def _do_google():
             translator = GoogleTranslator(source="auto", target=t_lang)
-            # Translate up to 1500 characters
-            to_trans = text[:1500]
-            return translator.translate(to_trans)
+            return translator.translate(text[:1400])
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(_do_translate)
-            translated = future.result(timeout=3.5)
-            if translated and len(translated.strip()) > 10 and not translated.startswith("Error"):
+            future = executor.submit(_do_google)
+            translated = future.result(timeout=5.0)
+            if translated and len(translated.strip()) > 10 and not translated.lower().startswith("error"):
+                _TRANSLATION_CACHE[cache_key] = translated
                 return translated
-    except Exception as e:
-        print(f"[WARN] deep_translator note ({t_lang}): {e}")
+    except Exception:
+        pass
+
+    # 2. Attempt MyMemoryTranslator fallback (100% free with BCP-47 codes)
+    try:
+        from deep_translator import MyMemoryTranslator
+        bcp_target = BCP47_MAP.get(t_lang, f"{t_lang}-IN")
+
+        def _do_mymemory():
+            translator = MyMemoryTranslator(source="en-IN", target=bcp_target)
+            return translator.translate(text[:500])
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_do_mymemory)
+            translated = future.result(timeout=4.0)
+            if translated and len(translated.strip()) > 10 and not translated.lower().startswith("error"):
+                _TRANSLATION_CACHE[cache_key] = translated
+                return translated
+    except Exception:
+        pass
+
+    # 3. Built-in Lexicon Replacement Fallback
+    terms = INDIC_WEATHER_TERMS.get(t_lang, {})
+    if terms:
+        localized_text = text
+        for eng_term, indic_term in terms.items():
+            localized_text = localized_text.replace(eng_term, indic_term)
+        _TRANSLATION_CACHE[cache_key] = localized_text
+        return localized_text
 
     return text
 

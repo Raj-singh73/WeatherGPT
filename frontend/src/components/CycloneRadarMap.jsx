@@ -51,7 +51,7 @@ export default function CycloneRadarMap({ activeSystem }) {
           <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
             <span>{activeSystem.name}</span>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 font-extrabold border border-rose-200 uppercase">
-              {activeSystem.category?.title}
+              {typeof activeSystem.category === 'object' ? (activeSystem.category?.title || activeSystem.category?.code) : (activeSystem.category || 'Cyclone')}
             </span>
           </h3>
         </div>
@@ -73,7 +73,7 @@ export default function CycloneRadarMap({ activeSystem }) {
       <div className="flex-1 w-full rounded-2xl overflow-hidden border border-slate-200 relative min-h-[380px] bg-slate-100">
         <MapContainer
           key={`cyclone_map_${currentPos.lat}_${currentPos.lon}`}
-          center={[19.5, 84.5]}
+          center={[currentPos.lat || 19.5, currentPos.lon || 84.5]}
           zoom={6}
           scrollWheelZoom={false}
           className="h-full w-full"
@@ -95,7 +95,7 @@ export default function CycloneRadarMap({ activeSystem }) {
                 fillColor: ring.color,
                 fillOpacity: idx === 0 ? 0.22 : 0.04,
                 weight: 1.5,
-                dashArray: idx > 1 ? '4, 4' : null
+                dashArray: idx > 1 ? '4, 4' : undefined
               }}
             >
               <Popup>

@@ -23,15 +23,67 @@ import api from '../api';
 import { getTranslation } from '../translations';
 
 const SPOKEN_LANGUAGES = [
-  { code: 'auto', key: 'auto', label: '🌐 Auto-Detect Language (Any Language)', flag: '🌐' },
   { code: 'hi-IN', key: 'hi', label: 'हिन्दी (Hindi)', flag: '🇮🇳' },
   { code: 'en-IN', key: 'en', label: 'English (India)', flag: '🇬🇧' },
-  { code: 'ta-IN', key: 'ta', label: 'தமிழ் (Tamil)', flag: '🇮🇳' },
   { code: 'mr-IN', key: 'mr', label: 'मराठी (Marathi)', flag: '🇮🇳' },
+  { code: 'ta-IN', key: 'ta', label: 'தமிழ் (Tamil)', flag: '🇮🇳' },
   { code: 'bn-IN', key: 'bn', label: 'বাংলা (Bengali)', flag: '🇮🇳' },
   { code: 'te-IN', key: 'te', label: 'తెలుగు (Telugu)', flag: '🇮🇳' },
   { code: 'gu-IN', key: 'gu', label: 'ગુજરાતી (Gujarati)', flag: '🇮🇳' },
+  { code: 'auto', key: 'auto', label: '🌐 Auto-Detect', flag: '🌐' }
 ];
+
+const SAMPLE_CHIPS = {
+  en: [
+    { label: '🌧️ Will it rain tomorrow?', query: (loc) => `Will it rain today or tomorrow in ${loc}?` },
+    { label: '🌱 Spray pesticide on crops?', query: (loc) => `Can I spray pesticide on crops tomorrow in ${loc}?` },
+    { label: '👕 Can I dry clothes outside?', query: (loc) => `Can I dry clothes outdoors today in ${loc}?` },
+    { label: '🚗 Safe to drive on highway?', query: (loc) => `Is it safe to drive on the highway today in ${loc}?` },
+    { label: '💧 Should I irrigate my field?', query: (loc) => `Should I irrigate my crops today in ${loc}?` }
+  ],
+  hi: [
+    { label: '🌧️ क्या कल बारिश होगी?', query: (loc) => `क्या आज या कल ${loc} में बारिश होगी?` },
+    { label: '🌱 क्या कीटनाशक छिड़काव करूँ?', query: (loc) => `क्या मैं कल अपनी फसल पर कीटनाशक का छिड़काव कर सकता हूँ?` },
+    { label: '👕 क्या कपड़े बाहर सुखा सकते हैं?', query: (loc) => `क्या आज ${loc} में कपड़े बाहर सुखा सकते हैं?` },
+    { label: '🚗 क्या हाईवे यात्रा सुरक्षित है?', query: (loc) => `क्या आज ${loc} में हाईवे पर यात्रा करना सुरक्षित है?` },
+    { label: '💧 क्या फसल में पानी लगाना चाहिए?', query: (loc) => `क्या मुझे आज अपनी फसल की सिंचाई करनी चाहिए?` }
+  ],
+  mr: [
+    { label: '🌧️ उद्या पाऊस पडेल का?', query: (loc) => `उद्या ${loc} मध्ये पाऊस पडेल का?` },
+    { label: '🌱 पिकावर औषध फवारणी करावी का?', query: (loc) => `उद्या पिकावर औषध फवारणी करावी का?` },
+    { label: '👕 कपडे बाहेर वाळवावेत का?', query: (loc) => `आज ${loc} मध्ये कपडे बाहेर वाळवता येतील का?` },
+    { label: '🚗 महामार्गावर प्रवास सुरक्षित आहे का?', query: (loc) => `आज महामार्गावर प्रवास करणे सुरक्षित आहे का?` },
+    { label: '💧 पिकाला पाणी द्यावे का?', query: (loc) => `आज शेताला पाणी द्यावे का?` }
+  ],
+  ta: [
+    { label: '🌧️ நாளை மழை பெய்யுமா?', query: (loc) => `நாளை ${loc}-ல் மழை பெய்யுமா?` },
+    { label: '🌱 பூச்சிக்கொல்லி தெளிக்கலாமா?', query: (loc) => `நாளை பயிருக்கு பூச்சிக்கொல்லி தெளிக்கலாமா?` },
+    { label: '👕 துணி காய வைக்கலாமா?', query: (loc) => `இன்று வெளியே துணி காய வைக்கலாமா?` },
+    { label: '🚗 நெடுஞ்சாலை பயணம் பாதுகாப்பானதா?', query: (loc) => `இன்று நெடுஞ்சாலை பயணம் பாதுகாப்பானதா?` },
+    { label: '💧 பாசனம் செய்யலாமா?', query: (loc) => `இன்று பயிருக்கு நீர் பாசனம் செய்யலாமா?` }
+  ],
+  te: [
+    { label: '🌧️ రేపు వర్షం పడుతుందా?', query: (loc) => `రేపు ${loc}లో వర్షం పడుతుందా?` },
+    { label: '🌱 మందు పిచికారీ చేయవచ్చా?', query: (loc) => `రేపు పంటపై మందు పిచికారీ చేయవచ్చా?` },
+    { label: '👕 బట్టలు ఆరబెట్టవచ్చా?', query: (loc) => `ఈరోజు బయట బట్టలు ఆరబెట్టవచ్చా?` },
+    { label: '🚗 ప్రయాణం సురక్షితమేనా?', query: (loc) => `ఈరోజు హైవే ప్రయాణం సురక్షితమేనా?` },
+    { label: '💧 నీరు పెట్టవచ్చా?', query: (loc) => `ఈరోజు పంటకు నీరు పెట్టవచ్చా?` }
+  ],
+  bn: [
+    { label: '🌧️ কাল কি বৃষ্টি হবে?', query: (loc) => `কাল ${loc}-এ কি বৃষ্টি হবে?` },
+    { label: '🌱 কীটনাশক স্প্রে করব?', query: (loc) => `কাল ফসলে কীটনাশক স্প্রে করা যাবে কি?` },
+    { label: '👕 জামাকাপড় শুকানো যাবে?', query: (loc) => `আজ কি বাইরে জামাকাপড় শুকানো যাবে?` },
+    { label: '🚗 মহাসড়ক ভ্রমণ নিরাপদ?', query: (loc) => `আজ মহাসড়কে ভ্রমণ কি নিরাপদ?` },
+    { label: '💧 সেচ দেওয়া উচিত?', query: (loc) => `আজ কি ফসলে সেচ দেওয়া উচিত?` }
+  ],
+  gu: [
+    { label: '🌧️ કાલે વરસાદ પડશે?', query: (loc) => `કાલે ${loc}માં વરસાદ પડશે?` },
+    { label: '🌱 દવાનો છંટકાવ કરવો?', query: (loc) => `કાલે પાક પર દવાનો છંટકાવ કરી શકાય?` },
+    { label: '👕 કપડાં સૂકવી શકાય?', query: (loc) => `આજે બહાર કપડાં સૂકવવા યોગ્ય છે?` },
+    { label: '🚗 હાઇવે મુસાફરી સલામત?', query: (loc) => `આજે હાઇવે પર મુસાફરી કરવી સલામત છે?` },
+    { label: '💧 પાકને પાણી પાવું?', query: (loc) => `આજે પાકને પિયત આપવું જોઈએ?` }
+  ]
+};
 
 export default function VoiceAssistantModal({ 
   isOpen, 
@@ -41,8 +93,8 @@ export default function VoiceAssistantModal({
 }) {
   const t = getTranslation(language).voiceModal;
 
-  // Selected Speech Language (defaults to auto-detect any language)
-  const [selectedLang, setSelectedLang] = useState('auto');
+  // Selected Speech Language (defaults to current app language)
+  const [selectedLang, setSelectedLang] = useState('hi-IN');
   const [detectedLangName, setDetectedLangName] = useState('');
 
   // Recording & Audio States
@@ -127,7 +179,7 @@ export default function VoiceAssistantModal({
 
   useEffect(() => {
     if (isOpen) {
-      // Sync selectedLang with app language if set to auto
+      // Sync selectedLang with app language upon opening
       const langMap = {
         hi: 'hi-IN',
         mr: 'mr-IN',
@@ -167,7 +219,7 @@ export default function VoiceAssistantModal({
       stream = await navigator.mediaDevices.getUserMedia({ 
         audio: { 
           echoCancellation: true, 
-          noiseSuppression: true,
+          noiseSuppression: true, 
           autoGainControl: true 
         } 
       });
@@ -179,7 +231,7 @@ export default function VoiceAssistantModal({
       return;
     }
 
-    // 2. Audio Visualizer (Isolated AnalyserNode - zero speaker destination to prevent feedback muting)
+    // 2. Audio Visualizer (Isolated AnalyserNode)
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       const audioCtx = new AudioCtx();
@@ -210,7 +262,7 @@ export default function VoiceAssistantModal({
       console.warn('Visualizer notice:', e);
     }
 
-    // 3. Reliable Native MediaRecorder
+    // 3. MediaRecorder
     try {
       const mimeTypes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4', ''];
       const supportedType = mimeTypes.find(type => !type || MediaRecorder.isTypeSupported(type)) || '';
@@ -225,12 +277,12 @@ export default function VoiceAssistantModal({
         }
       };
 
-      mediaRecorder.start(200); // Emit chunk every 200ms
+      mediaRecorder.start(200);
     } catch (mrErr) {
       console.warn('MediaRecorder notice:', mrErr);
     }
 
-    // 4. Concurrent Live Speech Recognition (if available in browser)
+    // 4. Live Speech Recognition
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       try {
@@ -257,7 +309,7 @@ export default function VoiceAssistantModal({
           for (let i = 0; i < event.results.length; ++i) {
             const chunk = event.results[i][0].transcript;
             if (event.results[i].isFinal) {
-              fullTranscript += chunk;
+              fullTranscript += chunk + ' ';
             } else {
               interimChunk += chunk;
             }
@@ -285,7 +337,7 @@ export default function VoiceAssistantModal({
     isRecordingRef.current = true;
     setIsRecording(true);
     setRecordSeconds(0);
-    setStatusMessage('Listening to your voice... Speak clearly in any language!');
+    setStatusMessage('Listening to your voice... Speak clearly in your chosen language!');
 
     timerRef.current = setInterval(() => {
       setRecordSeconds(prev => {
@@ -298,7 +350,6 @@ export default function VoiceAssistantModal({
     }, 1000);
   };
 
-  // Asynchronous Stop Promise that GUARANTEES the final audio Blob is created
   const stopMediaRecorderAsync = () => {
     return new Promise((resolve) => {
       const mr = mediaRecorderRef.current;
@@ -324,7 +375,6 @@ export default function VoiceAssistantModal({
     });
   };
 
-  // Stop Recording and Process Audio
   const stopRecordingAndProcess = async (queryOverride) => {
     isRecordingRef.current = false;
     setIsRecording(false);
@@ -338,7 +388,6 @@ export default function VoiceAssistantModal({
     setIsLoading(true);
     setStatusMessage('Capturing voice and analyzing question...');
 
-    // Await the MediaRecorder to finish bundling the audio chunks
     const finalBlob = await stopMediaRecorderAsync();
 
     if (streamRef.current) {
@@ -347,23 +396,24 @@ export default function VoiceAssistantModal({
     }
 
     setAudioLevel(0);
-
-    // Now submit query
     await executeSubmission(finalBlob, queryOverride);
   };
 
-  // Submit Query to Backend
+  // Submit Query to Backend with 100% Respect for Chosen Language
   const executeSubmission = async (blobToUse, queryOverride) => {
     setIsLoading(true);
-    setStatusMessage('Detecting language and generating intelligent weather decision...');
+    setStatusMessage('Generating weather decision in chosen language...');
 
     const textToSubmit = queryOverride !== undefined ? queryOverride : (spokenText || interimText);
-    const audioToUse = blobToUse || audioBlobRef.current;
+    const audioToUse = blobToUse; // ONLY use live recorded blob, NEVER fall back to stale audioBlobRef
+
+    // Determine target language from selectedLang
+    const targetLang = selectedLang === 'auto' ? (language || 'hi') : selectedLang.split('-')[0];
 
     try {
       let res;
-      // If we have recorded voice audio and user didn't tap an explicit sample chip
-      if (!queryOverride && audioToUse && audioToUse.size > 300) {
+      // If we have live recorded voice audio from recording button
+      if (audioToUse && audioToUse.size > 300) {
         const formData = new FormData();
         formData.append('audio', audioToUse, 'voice_input.webm');
         formData.append('location', location);
@@ -372,8 +422,7 @@ export default function VoiceAssistantModal({
 
         res = await api.chatVoice(formData);
       } else {
-        // Fallback text endpoint
-        const targetLang = selectedLang === 'auto' ? 'hi' : selectedLang.split('-')[0];
+        // Direct text submission (from typed text or tapped question chips)
         res = await api.chat({
           message: textToSubmit || `What is the weather forecast for ${location}?`,
           location: location,
@@ -381,39 +430,36 @@ export default function VoiceAssistantModal({
         });
       }
 
-      // Display transcribed text from backend
       if (res.transcribed_text) {
         setSpokenText(res.transcribed_text);
       }
 
-      // Display detected language badge
-      if (res.detected_language) {
-        const langObj = SPOKEN_LANGUAGES.find(l => l.code === res.detected_language);
-        setDetectedLangName(langObj ? langObj.label : res.detected_language);
-      }
+      const activeLangObj = SPOKEN_LANGUAGES.find(l => l.code === (res.detected_language || selectedLang)) ||
+                            SPOKEN_LANGUAGES.find(l => l.key === targetLang);
+      setDetectedLangName(activeLangObj ? activeLangObj.label : targetLang);
 
       setAiResponse(res.response);
       if (res.audio_url) {
         setAiAudioUrl(res.audio_url);
       }
 
-      if (res.confidence > 0 && res.response) {
-        setStatusMessage('Decision synthesized! Playing voice response...');
-        playVoiceResponse(res.audio_url, res.speech_text || res.response, res.detected_language || selectedLang);
+      if (res.response) {
+        setStatusMessage(`Decision synthesized! Playing voice in ${activeLangObj?.label || targetLang}...`);
+        playVoiceResponse(res.audio_url, res.speech_text || res.response, targetLang);
       } else {
-        setStatusMessage(res.response || 'Please speak again or type your question.');
+        setStatusMessage('Please choose a question or speak your query.');
       }
     } catch (err) {
       console.error('Submission error:', err);
-      const fallback = `In ${location}, weather decision model is active. Please try speaking again.`;
+      const fallback = `In ${location}, weather decision model is active.`;
       setAiResponse(fallback);
-      playVoiceResponse(null, fallback, selectedLang);
+      playVoiceResponse(null, fallback, targetLang);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Dual-Mode Text-To-Speech Playback (Backend High-Clarity gTTS Stream + Browser Speech Synthesis Fallback)
+  // High-Clarity indic gTTS stream playback with browser synthesis fallback
   const playVoiceResponse = (audioStreamUrl, text, targetLangCode) => {
     stopSpeaking();
 
@@ -428,10 +474,10 @@ export default function VoiceAssistantModal({
       .trim()
       .slice(0, 350);
 
-    const langCode = targetLangCode === 'auto' ? 'hi-IN' : (targetLangCode || 'hi-IN');
-    const shortCode = langCode.split('-')[0];
+    const langCode = targetLangCode === 'auto' ? (language || 'hi') : (targetLangCode || 'hi');
+    const shortCode = langCode.includes('-') ? langCode.split('-')[0] : langCode;
 
-    // Priority 1: High-fidelity studio gTTS streaming from backend (Guaranteed native pronunciation for any Indian language)
+    // High-fidelity studio gTTS streaming from backend
     const streamUrl = audioStreamUrl || `/api/chat/tts?language=${shortCode}&text=${encodeURIComponent(cleanText)}`;
     try {
       const audio = new Audio(streamUrl);
@@ -446,15 +492,15 @@ export default function VoiceAssistantModal({
       audio.onerror = () => {
         setIsSpeaking(false);
         aiAudioElemRef.current = null;
-        speakBrowserSynthesis(cleanText, langCode);
+        speakBrowserSynthesis(cleanText, shortCode);
       };
 
       audio.play().catch(err => {
         console.warn('Audio stream playback note:', err);
-        speakBrowserSynthesis(cleanText, langCode);
+        speakBrowserSynthesis(cleanText, shortCode);
       });
     } catch (err) {
-      speakBrowserSynthesis(cleanText, langCode);
+      speakBrowserSynthesis(cleanText, shortCode);
     }
   };
 
@@ -465,12 +511,18 @@ export default function VoiceAssistantModal({
     }
     window.speechSynthesis.cancel();
 
+    const fullCodeMap = {
+      hi: 'hi-IN', mr: 'mr-IN', bn: 'bn-IN',
+      ta: 'ta-IN', te: 'te-IN', gu: 'gu-IN', en: 'en-IN'
+    };
+    const bcp47 = fullCodeMap[langCode] || `${langCode}-IN`;
+
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = langCode;
+    utterance.lang = bcp47;
     utterance.rate = 1.0;
 
     const voices = window.speechSynthesis.getVoices();
-    const matchedVoice = voices.find(v => v.lang.startsWith(langCode.slice(0, 2)));
+    const matchedVoice = voices.find(v => v.lang.startsWith(langCode));
     if (matchedVoice) {
       utterance.voice = matchedVoice;
     }
@@ -504,6 +556,10 @@ export default function VoiceAssistantModal({
     }
   };
 
+  // Determine current active question chips based on chosen language
+  const currentShortLang = selectedLang === 'auto' ? (language || 'hi') : selectedLang.split('-')[0];
+  const activeChips = SAMPLE_CHIPS[currentShortLang] || SAMPLE_CHIPS['en'];
+
   if (!isOpen) return null;
 
   return (
@@ -521,7 +577,7 @@ export default function VoiceAssistantModal({
                 WeatherGPT Multi-Lingual Voice Decision Assistant
               </h3>
               <p className="text-[11px] text-slate-500">
-                Station: <strong className="text-slate-800">{location}</strong> • Speak in Any Indian Language
+                Station: <strong className="text-slate-800">{location}</strong> • Speaks & Responds in Your Chosen Language
               </p>
             </div>
           </div>
@@ -544,17 +600,11 @@ export default function VoiceAssistantModal({
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                 <Globe className="h-4 w-4 text-sky-600" />
-                <span>Language Detection:</span>
+                <span>Select Response Language:</span>
               </span>
-              {detectedLangName ? (
-                <span className="text-[11px] font-extrabold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-md border border-emerald-300 animate-pulse">
-                  Detected: {detectedLangName}
-                </span>
-              ) : (
-                <span className="text-[11px] font-extrabold text-sky-700 bg-sky-100 px-2 py-0.5 rounded-md">
-                  Active: {SPOKEN_LANGUAGES.find(l => l.code === selectedLang)?.label || 'Auto-Detect'}
-                </span>
-              )}
+              <span className="text-[11px] font-extrabold text-sky-700 bg-sky-100 px-2.5 py-0.5 rounded-md border border-sky-200">
+                Active: {SPOKEN_LANGUAGES.find(l => l.code === selectedLang)?.label || 'Auto-Detect'}
+              </span>
             </div>
 
             <div className="flex flex-wrap gap-1.5">
@@ -566,6 +616,8 @@ export default function VoiceAssistantModal({
                     setSpokenText('');
                     setInterimText('');
                     setDetectedLangName('');
+                    audioBlobRef.current = null;
+                    setAudioUrl(null);
                     if (isRecording) {
                       stopRecordingAndProcess();
                     }
@@ -645,12 +697,12 @@ export default function VoiceAssistantModal({
                   {isSoundDetected ? (
                     <div className="flex items-center gap-1.5 text-xs font-extrabold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full border border-emerald-300 animate-pulse shadow-xs">
                       <span className="h-2 w-2 rounded-full bg-emerald-600 animate-ping"></span>
-                      <span>🎙️ Sound Detected: Hearing Voice ({audioLevel}%)</span>
+                      <span>🎙️ Sound Detected ({audioLevel}%)</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-full border border-amber-300">
                       <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
-                      <span>🎧 Listening for voice... Speak clearly</span>
+                      <span>🎧 Speak near mic</span>
                     </div>
                   )}
                 </div>
@@ -680,10 +732,10 @@ export default function VoiceAssistantModal({
             ) : (
               <div>
                 <h4 className="text-base font-black text-slate-900">
-                  {isSpeaking ? 'WeatherGPT is speaking...' : 'Tap the microphone to speak'}
+                  {isSpeaking ? 'WeatherGPT is speaking...' : 'Tap mic or choose a question below'}
                 </h4>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  {statusMessage || 'Speak in Hindi, English, Tamil, Marathi, or any language. We auto-detect and answer.'}
+                  {statusMessage || `Output will be generated and spoken in ${SPOKEN_LANGUAGES.find(l => l.code === selectedLang)?.label || 'chosen language'}.`}
                 </p>
               </div>
             )}
@@ -702,7 +754,7 @@ export default function VoiceAssistantModal({
                 </button>
                 <div>
                   <strong className="text-xs text-slate-900 block">Your Recorded Voice ({recordSeconds}s)</strong>
-                  <span className="text-[11px] text-sky-700">Audio captured cleanly</span>
+                  <span className="text-[11px] text-sky-700">Audio captured</span>
                 </div>
               </div>
 
@@ -724,12 +776,12 @@ export default function VoiceAssistantModal({
             </div>
           )}
 
-          {/* 3. Live Speech-to-Text Typing Container */}
+          {/* 3. Live Speech-to-Text / Question Input Box */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                 <User className="h-3.5 w-3.5 text-sky-600" />
-                <span>What You Spoke (Auto-Transcribed):</span>
+                <span>Question for WeatherGPT:</span>
               </label>
               {(spokenText || interimText) && (
                 <div className="flex items-center space-x-1.5">
@@ -740,8 +792,10 @@ export default function VoiceAssistantModal({
                     onClick={() => {
                       setSpokenText('');
                       setInterimText('');
+                      audioBlobRef.current = null;
+                      setAudioUrl(null);
                     }}
-                    className="text-[10px] text-slate-400 hover:text-rose-600 p-1 rounded transition-colors"
+                    className="text-[10px] text-slate-400 hover:text-rose-600 p-1 rounded transition-colors cursor-pointer"
                     title="Clear text"
                   >
                     <Trash2 className="h-3 w-3" />
@@ -754,8 +808,11 @@ export default function VoiceAssistantModal({
               <textarea
                 rows={3}
                 value={spokenText ? (interimText ? `${spokenText} ${interimText}` : spokenText) : interimText}
-                onChange={(e) => setSpokenText(e.target.value)}
-                placeholder="Speak in any language... The words you speak will be transcribed here."
+                onChange={(e) => {
+                  setSpokenText(e.target.value);
+                  audioBlobRef.current = null;
+                }}
+                placeholder="Ask any weather question... It will be answered in your chosen language."
                 className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-xs text-slate-900 font-semibold focus:outline-none focus:border-sky-500 focus:bg-white resize-none shadow-xs"
               />
               {isRecording && (
@@ -768,7 +825,7 @@ export default function VoiceAssistantModal({
             {/* Send & Process Button */}
             <div className="flex items-center justify-between pt-1">
               <span className="text-[11px] text-slate-400">
-                You can edit what you spoke above or tap Send directly.
+                Tap questions below or type and press Process.
               </span>
               <button
                 onClick={() => executeSubmission()}
@@ -790,38 +847,43 @@ export default function VoiceAssistantModal({
             </div>
           </div>
 
-          {/* Quick Sample Questions */}
-          <div className="pt-2 border-t border-slate-100 space-y-1">
-            <span className="text-[11px] font-bold text-slate-500 block">
-              Or tap any specific question to test:
-            </span>
+          {/* 4. Quick Sample Questions Tailored to Chosen Language */}
+          <div className="pt-2 border-t border-slate-100 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
+                <Sparkles className="h-3 w-3 text-amber-500" />
+                <span>Tap any question to get instant solution & voice:</span>
+              </span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                {SPOKEN_LANGUAGES.find(l => l.code === selectedLang)?.label || 'Chosen Language'}
+              </span>
+            </div>
             <div className="flex flex-wrap gap-1.5">
-              {[
-                { label: '🌧️ Will it rain tomorrow?', query: `Will it rain today or tomorrow in ${location}?` },
-                { label: '🌱 क्या मैं कीटनाशक का छिड़काव करूँ?', query: `क्या मैं कल अपनी फसल पर कीटनाशक का छिड़काव कर सकता हूँ?` },
-                { label: '👕 What should I wear?', query: `Should I carry an umbrella or wear a jacket today in ${location}?` },
-                { label: '🚗 Highway travel safe?', query: `Is it safe to drive on the highway today in ${location}?` },
-                { label: '💧 फसल में पानी लगाना चाहिए?', query: `क्या मुझे आज अपनी फसल की सिंचाई करनी चाहिए?` }
-              ].map((chip, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    setSpokenText(chip.query);
-                    executeSubmission(null, chip.query);
-                  }}
-                  className="text-[11px] bg-slate-100 hover:bg-sky-100 text-slate-700 hover:text-sky-800 font-semibold px-2.5 py-1 rounded-lg transition-all cursor-pointer"
-                >
-                  {chip.label}
-                </button>
-              ))}
+              {activeChips.map((chip, idx) => {
+                const queryText = typeof chip.query === 'function' ? chip.query(location) : chip.query;
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      audioBlobRef.current = null;
+                      setAudioUrl(null);
+                      setSpokenText(queryText);
+                      executeSubmission(null, queryText);
+                    }}
+                    className="text-[11px] bg-white hover:bg-sky-50 text-slate-700 hover:text-sky-800 font-semibold px-3 py-1.5 rounded-xl border border-slate-200 transition-all cursor-pointer shadow-2xs flex items-center gap-1"
+                  >
+                    {chip.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* 4. AI Voice Response */}
+          {/* 5. AI Voice & Text Solution */}
           {isLoading && (
             <div className="flex items-center space-x-2 text-xs text-sky-700 bg-sky-50 p-4 rounded-2xl border border-sky-200 animate-pulse">
               <Loader2 className="h-4 w-4 animate-spin text-sky-600" />
-              <span>Analyzing your speech and generating direct weather decision...</span>
+              <span>Synthesizing actionable weather decision in {SPOKEN_LANGUAGES.find(l => l.code === selectedLang)?.label || 'chosen language'}...</span>
             </div>
           )}
 
@@ -830,23 +892,23 @@ export default function VoiceAssistantModal({
               <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                 <span className="text-xs uppercase font-extrabold text-emerald-800 flex items-center gap-1.5">
                   <Bot className="h-4 w-4 text-emerald-600" />
-                  <span>WeatherGPT Solution:</span>
+                  <span>WeatherGPT Solution ({SPOKEN_LANGUAGES.find(l => l.code === selectedLang)?.label || 'Chosen Language'}):</span>
                 </span>
                 <div className="flex items-center space-x-2">
                   {isSpeaking ? (
                     <button
                       onClick={stopSpeaking}
-                      className="text-[11px] bg-rose-100 border border-rose-200 text-rose-800 px-2.5 py-1 rounded-full flex items-center gap-1 cursor-pointer font-bold"
+                      className="text-[11px] bg-rose-100 border border-rose-200 text-rose-800 px-2.5 py-1 rounded-full flex items-center gap-1 cursor-pointer font-bold animate-pulse"
                     >
                       <VolumeX className="h-3 w-3" /> Stop Voice
                     </button>
                   ) : (
                     <button
                       onClick={() => playVoiceResponse(aiAudioUrl, aiResponse, selectedLang)}
-                      className="text-[11px] bg-sky-100 hover:bg-sky-200 border border-sky-200 text-sky-800 px-3 py-1 rounded-full flex items-center gap-1.5 cursor-pointer font-bold transition-all shadow-xs"
+                      className="text-[11px] bg-sky-100 hover:bg-sky-200 border border-sky-300 text-sky-800 px-3 py-1 rounded-full flex items-center gap-1.5 cursor-pointer font-bold transition-all shadow-xs"
                     >
                       <Volume2 className="h-3.5 w-3.5" />
-                      <span>Listen to Voice (आवाज़ सुनें)</span>
+                      <span>🔊 Listen to Voice ({SPOKEN_LANGUAGES.find(l => l.code === selectedLang)?.label.split(' ')[0] || 'Play'})</span>
                     </button>
                   )}
                 </div>
@@ -863,7 +925,7 @@ export default function VoiceAssistantModal({
         {/* Footer */}
         <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
           <span className="text-[11px] text-slate-500">
-            Microphone: <strong>{isRecording ? 'Active Recording' : 'Standby'}</strong>
+            Language: <strong className="text-slate-800">{SPOKEN_LANGUAGES.find(l => l.code === selectedLang)?.label}</strong>
           </span>
 
           <button

@@ -1501,12 +1501,13 @@ def process_chat_message(user_msg: str, user_loc: str = "Nagpur", lang: str = "e
     import urllib.parse
     from services.multilingual_service import detect_language_from_text, translate_weather_response, clean_text_for_speech
 
-    # 1. Detect language if auto or en
-    effective_lang = (lang or "en").lower().split("-")[0]
-    if effective_lang in ["auto", "en", ""]:
+    # 1. Determine effective language: prioritize explicit language parameter
+    req_lang = (lang or "").strip().lower().split("-")[0]
+    if req_lang in ["auto", ""]:
         detected = detect_language_from_text(user_msg)
-        if detected != "en":
-            effective_lang = detected
+        effective_lang = detected
+    else:
+        effective_lang = req_lang
 
     # 2. Intent & Location
     intent, extracted_loc, crop_info = detect_intent_and_location(user_msg, default_loc=user_loc)
@@ -1533,7 +1534,7 @@ def process_chat_message(user_msg: str, user_loc: str = "Nagpur", lang: str = "e
     )
 
     # 5. Domain Decision Evaluation
-    eval_lang = "hi" if effective_lang in ["hi", "mr"] else "en"
+    eval_lang = "hi" if effective_lang == "hi" else "en"
     response_text, decision_meta = evaluate_use_case_decision(
         query=user_msg,
         intent=intent,
@@ -1547,10 +1548,8 @@ def process_chat_message(user_msg: str, user_loc: str = "Nagpur", lang: str = "e
     )
 
     # 6. Multilingual Translation into target Indic Language
-    if effective_lang not in ["en", "hi"]:
+    if effective_lang != eval_lang:
         response_text = translate_weather_response(response_text, target_lang=effective_lang)
-    elif effective_lang == "hi" and eval_lang != "hi":
-        response_text = translate_weather_response(response_text, target_lang="hi")
 
     # 7. RAG Retrieval for Supporting Provenance
     try:
