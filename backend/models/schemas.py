@@ -232,6 +232,7 @@ class ChatResponse(BaseModel):
     detected_language: Optional[str] = None
     speech_text: Optional[str] = None
     audio_url: Optional[str] = None
+    response_source: Optional[str] = None
 
 
 # =====================================================================

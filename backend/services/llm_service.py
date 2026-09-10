@@ -1501,6 +1501,9 @@ def process_chat_message(user_msg: str, user_loc: str = "Nagpur", lang: str = "e
     import urllib.parse
     from services.multilingual_service import detect_language_from_text, translate_weather_response, clean_text_for_speech
 
+    llm_source = "local"
+    llm_provider = settings.LLM_PROVIDER.lower()
+
     # 1. Determine effective language: prioritize explicit language parameter
     req_lang = (lang or "").strip().lower().split("-")[0]
     if req_lang in ["auto", ""]:
@@ -1547,19 +1550,8 @@ def process_chat_message(user_msg: str, user_loc: str = "Nagpur", lang: str = "e
         persona=persona
     )
 
-    # 6. Multilingual Translation into target Indic Language
-    if effective_lang != eval_lang:
-        response_text = translate_weather_response(response_text, target_lang=effective_lang)
-
-    # 7. RAG Retrieval for Supporting Provenance
-    try:
-        retriever = get_retriever()
-        rag_matches = retriever.retrieve(user_msg, top_k=2)
-    except Exception:
-        rag_matches = []
-
-    # 8. External LLM Synthesis (if API key is present)
-    llm_provider = settings.LLM_PROVIDER.lower()
+    # 6. Prefer Gemini response when configured; otherwise fall back to local response and translate if needed.
+    gemini_response_valid = False
     if settings.GEMINI_API_KEY and llm_provider in ["auto", "gemini"]:
         try:
             prompt = (
@@ -1573,7 +1565,7 @@ def process_chat_message(user_msg: str, user_loc: str = "Nagpur", lang: str = "e
                 f"AI Risk: {risk['risk_level']} (Score: {risk['risk_score']}/100)\n"
                 f"Answer the user's specific practical question directly first with a clear verdict, give exact numbers, and conclude with actionable advice tailored to their role."
             )
-            gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
+            gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={settings.GEMINI_API_KEY}"
             payload = {"contents": [{"parts": [{"text": prompt}]}]}
             with httpx.Client(timeout=4.0) as client:
                 res = client.post(gemini_url, json=payload)
@@ -1581,10 +1573,22 @@ def process_chat_message(user_msg: str, user_loc: str = "Nagpur", lang: str = "e
                     cand = res.json()["candidates"][0]["content"]["parts"][0]["text"]
                     if cand and len(cand.strip()) > 30:
                         response_text = cand
+                        gemini_response_valid = True
+                        llm_source = "gemini"
         except Exception as e:
             print(f"[WARN] Gemini synthesis notice: {e}")
 
-    # 9. Clean Speech Text & Direct Audio Streaming URL
+    if not gemini_response_valid and effective_lang != eval_lang:
+        response_text = translate_weather_response(response_text, target_lang=effective_lang)
+
+    # 7. RAG Retrieval for Supporting Provenance
+    try:
+        retriever = get_retriever()
+        rag_matches = retriever.retrieve(user_msg, top_k=2)
+    except Exception:
+        rag_matches = []
+
+    # 8. Clean Speech Text & Direct Audio Streaming URL
     speech_text = clean_text_for_speech(response_text)
     encoded_text = urllib.parse.quote(speech_text[:350])
     audio_url = f"/api/chat/tts?language={effective_lang}&text={encoded_text}"
@@ -1628,6 +1632,7 @@ def process_chat_message(user_msg: str, user_loc: str = "Nagpur", lang: str = "e
         "action_steps": decision_meta.get("action_steps", []),
         "weather_summary": weather_summary,
         "speech_text": speech_text,
-        "audio_url": audio_url
+        "audio_url": audio_url,
+        "response_source": llm_source
     }
 

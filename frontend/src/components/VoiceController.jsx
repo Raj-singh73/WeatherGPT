@@ -3,7 +3,6 @@ import { Mic, MicOff, Volume2, VolumeX, Square, Globe, Loader2, Sparkles, Check,
 import api from '../api';
 
 const VOICE_LANGUAGES = [
-  { code: 'auto', key: 'auto', label: '🌐 Auto-Detect', short: 'Auto' },
   { code: 'hi-IN', key: 'hi', label: '🇮🇳 हिन्दी (Hindi)', short: 'हिन्दी' },
   { code: 'en-IN', key: 'en', label: '🇬🇧 English', short: 'English' },
   { code: 'mr-IN', key: 'mr', label: '🇮🇳 मराठी (Marathi)', short: 'मराठी' },
@@ -11,12 +10,6 @@ const VOICE_LANGUAGES = [
   { code: 'ta-IN', key: 'ta', label: '🇮🇳 தமிழ் (Tamil)', short: 'தமிழ்' },
   { code: 'te-IN', key: 'te', label: '🇮🇳 తెలుగు (Telugu)', short: 'తెలుగు' },
   { code: 'gu-IN', key: 'gu', label: '🇮🇳 ગુજરાતી (Gujarati)', short: 'ગુજરાતી' },
-  { code: 'kn-IN', key: 'kn', label: '🇮🇳 ಕನ್ನಡ (Kannada)', short: 'ಕನ್ನಡ' },
-  { code: 'ml-IN', key: 'ml', label: '🇮🇳 മലയാളം (Malayalam)', short: 'മലയാളം' },
-  { code: 'pa-IN', key: 'pa', label: '🇮🇳 ਪੰਜਾਬੀ (Punjabi)', short: 'ਪੰਜਾਬੀ' },
-  { code: 'or-IN', key: 'or', label: '🇮🇳 ଓଡ଼ିଆ (Odia)', short: 'ଓଡ଼ିଆ' },
-  { code: 'as-IN', key: 'as', label: '🇮🇳 অসমীয়া (Assamese)', short: 'অসমীয়া' },
-  { code: 'ur-IN', key: 'ur', label: '🇮🇳 اردو (Urdu)', short: 'اردو' },
 ];
 
 export default function VoiceController({ 
@@ -34,6 +27,7 @@ export default function VoiceController({
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [detectedLangBadge, setDetectedLangBadge] = useState('');
+  const [speechNotice, setSpeechNotice] = useState('');
 
   const isListeningRef = useRef(false);
   const recognitionRef = useRef(null);
@@ -55,27 +49,10 @@ export default function VoiceController({
       ta: 'ta-IN',
       te: 'te-IN',
       gu: 'gu-IN',
-      kn: 'kn-IN',
-      ml: 'ml-IN',
-      pa: 'pa-IN',
-      or: 'or-IN',
-      as: 'as-IN',
-      ur: 'ur-IN',
-      kn: 'kn-IN',
-      ml: 'ml-IN',
-      pa: 'pa-IN',
-      or: 'or-IN',
-      as: 'as-IN',
-      ur: 'ur-IN',
-      kn: 'kn-IN',
-      ml: 'ml-IN',
-      pa: 'pa-IN',
-      or: 'or-IN',
-      as: 'as-IN',
-      ur: 'ur-IN',
       en: 'en-IN'
     };
-    if (selectedVoiceLang === 'auto' && language && langMap[language]) {
+
+    if (language && langMap[language]) {
       setSelectedVoiceLang(langMap[language]);
     }
   }, [language]);
@@ -125,6 +102,7 @@ export default function VoiceController({
     interimTranscriptRef.current = '';
     finalTranscriptRef.current = '';
     setDetectedLangBadge('');
+    setSpeechNotice('');
     audioChunksRef.current = [];
 
     // 1. Hardware Microphone Stream
@@ -197,6 +175,10 @@ export default function VoiceController({
 
     // 4. Live Browser SpeechRecognition (Interim & Continuous Multi-Lingual STT)
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setSpeechNotice('Browser speech recognition is not available here. The app will still try backend transcription, but transcript text may not appear immediately.');
+    }
+
     if (SpeechRecognition) {
       try {
         const recog = new SpeechRecognition();
@@ -286,12 +268,10 @@ export default function VoiceController({
 
     const capturedBrowserText = (finalTranscriptRef.current || interimTranscriptRef.current).trim();
 
-    // If browser captured speech cleanly, use it directly
+    // If browser captured speech cleanly, populate the textbox first and let the user send it.
     if (capturedBrowserText) {
       setIsTranscribing(false);
-      if (onSpeechRecognized) {
-        onSpeechRecognized(capturedBrowserText);
-      }
+      setSpeechNotice('Voice captured successfully. Please review the text and send it when ready.');
       return;
     }
 
@@ -311,13 +291,15 @@ export default function VoiceController({
             setDetectedLangBadge(langObj ? langObj.short : res.detected_language);
           }
           if (onTranscriptUpdate) onTranscriptUpdate(res.transcribed_text);
-          if (onSpeechRecognized) onSpeechRecognized(res.transcribed_text);
         } else {
           alert('Could not detect clear speech. Please try speaking closer to your microphone.');
         }
       } catch (err) {
         console.warn('Backend audio transcription error:', err);
+        setSpeechNotice('Microphone audio was captured, but backend transcription did not return text. Please try speaking more clearly or type your question manually.');
       }
+    } else {
+      setSpeechNotice('No clear voice was captured. Please speak closer to the microphone and try again.');
     }
 
     setIsTranscribing(false);
@@ -486,6 +468,12 @@ export default function VoiceController({
       </div>
 
       {/* Active Sound Detection & Equalizer HUD */}
+      {speechNotice && (
+        <div className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 max-w-full">
+          {speechNotice}
+        </div>
+      )}
+
       {isListening && (
         <div className="flex items-center gap-2 bg-slate-900/90 text-white px-3 py-1 rounded-xl shadow-lg animate-fadeIn border border-slate-700">
           {/* Real-time decibel waveform equalizer */}

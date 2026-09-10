@@ -889,10 +889,6 @@ export default function ChatPage({
           language={language}
           location={location}
           onTranscriptUpdate={(transcript) => setInputMessage(transcript)}
-          onSpeechRecognized={(speechText) => {
-            setInputMessage(speechText);
-            handleSendMessage(speechText);
-          }}
           textToSpeak={messages[messages.length - 1]?.sender === 'bot' ? messages[messages.length - 1].text : ''}
         />
 

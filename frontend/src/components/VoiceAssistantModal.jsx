@@ -26,17 +26,10 @@ const SPOKEN_LANGUAGES = [
   { code: 'hi-IN', key: 'hi', label: 'हिन्दी (Hindi)', flag: '🇮🇳' },
   { code: 'en-IN', key: 'en', label: 'English (India)', flag: '🇬🇧' },
   { code: 'mr-IN', key: 'mr', label: 'मराठी (Marathi)', flag: '🇮🇳' },
-  { code: 'ta-IN', key: 'ta', label: 'தமிழ் (Tamil)', flag: '🇮🇳' },
   { code: 'bn-IN', key: 'bn', label: 'বাংলা (Bengali)', flag: '🇮🇳' },
+  { code: 'ta-IN', key: 'ta', label: 'தமிழ் (Tamil)', flag: '🇮🇳' },
   { code: 'te-IN', key: 'te', label: 'తెలుగు (Telugu)', flag: '🇮🇳' },
-  { code: 'gu-IN', key: 'gu', label: 'ગુજરાતી (Gujarati)', flag: '🇮🇳' },
-  { code: 'kn-IN', key: 'kn', label: 'ಕನ್ನಡ (Kannada)', flag: '🇮🇳' },
-  { code: 'ml-IN', key: 'ml', label: 'മലയാളം (Malayalam)', flag: '🇮🇳' },
-  { code: 'pa-IN', key: 'pa', label: 'ਪੰਜਾਬੀ (Punjabi)', flag: '🇮🇳' },
-  { code: 'or-IN', key: 'or', label: 'ଓଡ଼ିଆ (Odia)', flag: '🇮🇳' },
-  { code: 'as-IN', key: 'as', label: 'অসমীয়া (Assamese)', flag: '🇮🇳' },
-  { code: 'ur-IN', key: 'ur', label: 'اردو (Urdu)', flag: '🇮🇳' },
-  { code: 'auto', key: 'auto', label: '🌐 Auto-Detect', flag: '🌐' }
+  { code: 'gu-IN', key: 'gu', label: 'ગુજરાતી (Gujarati)', flag: '🇮🇳' }
 ];
 
 const SAMPLE_CHIPS = {
