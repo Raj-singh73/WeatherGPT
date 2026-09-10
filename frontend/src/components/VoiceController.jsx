@@ -11,6 +11,12 @@ const VOICE_LANGUAGES = [
   { code: 'ta-IN', key: 'ta', label: '🇮🇳 தமிழ் (Tamil)', short: 'தமிழ்' },
   { code: 'te-IN', key: 'te', label: '🇮🇳 తెలుగు (Telugu)', short: 'తెలుగు' },
   { code: 'gu-IN', key: 'gu', label: '🇮🇳 ગુજરાતી (Gujarati)', short: 'ગુજરાતી' },
+  { code: 'kn-IN', key: 'kn', label: '🇮🇳 ಕನ್ನಡ (Kannada)', short: 'ಕನ್ನಡ' },
+  { code: 'ml-IN', key: 'ml', label: '🇮🇳 മലയാളം (Malayalam)', short: 'മലയാളം' },
+  { code: 'pa-IN', key: 'pa', label: '🇮🇳 ਪੰਜਾਬੀ (Punjabi)', short: 'ਪੰਜਾਬੀ' },
+  { code: 'or-IN', key: 'or', label: '🇮🇳 ଓଡ଼ିଆ (Odia)', short: 'ଓଡ଼ିଆ' },
+  { code: 'as-IN', key: 'as', label: '🇮🇳 অসমীয়া (Assamese)', short: 'অসমীয়া' },
+  { code: 'ur-IN', key: 'ur', label: '🇮🇳 اردو (Urdu)', short: 'اردو' },
 ];
 
 export default function VoiceController({ 
@@ -49,6 +55,24 @@ export default function VoiceController({
       ta: 'ta-IN',
       te: 'te-IN',
       gu: 'gu-IN',
+      kn: 'kn-IN',
+      ml: 'ml-IN',
+      pa: 'pa-IN',
+      or: 'or-IN',
+      as: 'as-IN',
+      ur: 'ur-IN',
+      kn: 'kn-IN',
+      ml: 'ml-IN',
+      pa: 'pa-IN',
+      or: 'or-IN',
+      as: 'as-IN',
+      ur: 'ur-IN',
+      kn: 'kn-IN',
+      ml: 'ml-IN',
+      pa: 'pa-IN',
+      or: 'or-IN',
+      as: 'as-IN',
+      ur: 'ur-IN',
       en: 'en-IN'
     };
     if (selectedVoiceLang === 'auto' && language && langMap[language]) {

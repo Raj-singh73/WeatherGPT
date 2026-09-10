@@ -38,7 +38,7 @@ export default function ForecastPage({ forecast, location = 'Nagpur', language =
       rainSum: d.rain_sum || p,
       precipProb: Math.round(prob),
       precipHours: hrs,
-      precipCategory: d.precipitation_category || (p > 0 ? (language === 'hi' ? 'हल्की/मध्यम बारिश' : 'Light/Moderate Rain') : (language === 'hi' ? 'शुष्क मौसम' : 'No Rain (Dry)')),
+      precipCategory: d.precipitation_category || (p > 0 ? (language === 'en' ? 'Light/Moderate Rain' : 'हल्की/मध्यम बारिश') : (language === 'en' ? 'No Rain (Dry)' : 'शुष्क मौसम')),
       windGust: d.wind_gust_max,
       riskScore: d.risk_score,
       riskLevel: d.risk_level,
@@ -58,7 +58,7 @@ export default function ForecastPage({ forecast, location = 'Nagpur', language =
   const todayForecast = chartData[0] || {};
   const todayRainProb = todayForecast.precipProb ?? 10;
   const todayRainHours = todayForecast.precipHours ?? 0;
-  const todayPrecipCategory = todayForecast.precipCategory || (rain24h > 0 ? (language === 'hi' ? 'हल्की बारिश' : 'Light Rain') : (language === 'hi' ? 'शुष्क मौसम' : 'No Rain (Dry)'));
+  const todayPrecipCategory = todayForecast.precipCategory || (rain24h > 0 ? (language === 'en' ? 'Light Rain' : 'हल्की बारिश') : (language === 'en' ? 'No Rain (Dry)' : 'शुष्क मौसम'));
 
   if (!forecast && days.length === 0) {
     return (

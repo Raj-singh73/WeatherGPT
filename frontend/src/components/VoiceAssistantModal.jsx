@@ -30,6 +30,12 @@ const SPOKEN_LANGUAGES = [
   { code: 'bn-IN', key: 'bn', label: 'বাংলা (Bengali)', flag: '🇮🇳' },
   { code: 'te-IN', key: 'te', label: 'తెలుగు (Telugu)', flag: '🇮🇳' },
   { code: 'gu-IN', key: 'gu', label: 'ગુજરાતી (Gujarati)', flag: '🇮🇳' },
+  { code: 'kn-IN', key: 'kn', label: 'ಕನ್ನಡ (Kannada)', flag: '🇮🇳' },
+  { code: 'ml-IN', key: 'ml', label: 'മലയാളം (Malayalam)', flag: '🇮🇳' },
+  { code: 'pa-IN', key: 'pa', label: 'ਪੰਜਾਬੀ (Punjabi)', flag: '🇮🇳' },
+  { code: 'or-IN', key: 'or', label: 'ଓଡ଼ିଆ (Odia)', flag: '🇮🇳' },
+  { code: 'as-IN', key: 'as', label: 'অসমীয়া (Assamese)', flag: '🇮🇳' },
+  { code: 'ur-IN', key: 'ur', label: 'اردو (Urdu)', flag: '🇮🇳' },
   { code: 'auto', key: 'auto', label: '🌐 Auto-Detect', flag: '🌐' }
 ];
 
@@ -187,6 +193,12 @@ export default function VoiceAssistantModal({
         ta: 'ta-IN',
         te: 'te-IN',
         gu: 'gu-IN',
+        kn: 'kn-IN',
+        ml: 'ml-IN',
+        pa: 'pa-IN',
+        or: 'or-IN',
+        as: 'as-IN',
+        ur: 'ur-IN',
         en: 'en-IN'
       };
       if (language && langMap[language]) {
@@ -297,6 +309,12 @@ export default function VoiceAssistantModal({
           ta: 'ta-IN',
           te: 'te-IN',
           gu: 'gu-IN',
+          kn: 'kn-IN',
+          ml: 'ml-IN',
+          pa: 'pa-IN',
+          or: 'or-IN',
+          as: 'as-IN',
+          ur: 'ur-IN',
           en: 'en-IN'
         };
         const appLangCode = langMap[language] || 'hi-IN';
@@ -513,7 +531,10 @@ export default function VoiceAssistantModal({
 
     const fullCodeMap = {
       hi: 'hi-IN', mr: 'mr-IN', bn: 'bn-IN',
-      ta: 'ta-IN', te: 'te-IN', gu: 'gu-IN', en: 'en-IN'
+      ta: 'ta-IN', te: 'te-IN', gu: 'gu-IN',
+      kn: 'kn-IN', ml: 'ml-IN', pa: 'pa-IN',
+      or: 'or-IN', as: 'as-IN', ur: 'ur-IN',
+      en: 'en-IN'
     };
     const bcp47 = fullCodeMap[langCode] || `${langCode}-IN`;
 

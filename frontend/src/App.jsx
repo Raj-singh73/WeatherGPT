@@ -19,6 +19,14 @@ import { getUserAccountAddress } from './utils/addressUtils';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [theme, setTheme] = useState(() => {
+    try {
+      const savedTheme = localStorage.getItem('weathergpt_theme');
+      return savedTheme || 'dark';
+    } catch {
+      return 'dark';
+    }
+  });
   // User Authentication & Profile State
   const [currentUser, setCurrentUser] = useState(() => {
     try {
@@ -62,7 +70,13 @@ export default function App() {
   const [forecast, setForecast] = useState(() => {
     try {
       const cached = localStorage.getItem('weathergpt_cached_forecast_' + (initialLoc || 'nagpur').toLowerCase());
-      return cached ? JSON.parse(cached) : null;
+      if (!cached) return null;
+
+      const parsed = JSON.parse(cached);
+      const firstDay = parsed?.forecast_days?.[0];
+      const hasLiveRiskData = Array.isArray(parsed?.forecast_days) && parsed.forecast_days.length > 0 && Number.isFinite(firstDay?.risk_score);
+
+      return hasLiveRiskData ? parsed : null;
     } catch {
       return null;
     }
@@ -184,6 +198,15 @@ export default function App() {
   };
 
   const t = getTranslation(language);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    try {
+      localStorage.setItem('weathergpt_theme', theme);
+    } catch {
+      // Ignore localStorage write failures
+    }
+  }, [theme]);
 
   const loadData = (locName = selectedLocation, lat = null, lon = null, explicitState = null) => {
     setLoading(true);
@@ -310,7 +333,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-sky-500 selection:text-white">
+    <div className={`min-h-screen flex flex-col font-sans selection:bg-sky-500 selection:text-white ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
       {/* Top Navigation */}
       <Navbar
         activeTab={activeTab}
@@ -319,6 +342,8 @@ export default function App() {
         setSelectedLocation={handleManualLocationSelect}
         language={language}
         setLanguage={setLanguage}
+        theme={theme}
+        onToggleTheme={() => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))}
         onOpenLocationModal={() => setIsLocationModalOpen(true)}
         onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
         user={currentUser}
@@ -435,6 +460,9 @@ export default function App() {
           <ErrorBoundary fallbackMessage="Unable to display the Climate & Cyclone dashboard. Please try reloading below.">
             <ClimatePage
               language={language}
+              location={selectedLocation}
+              latitude={selectedCoordinates?.lat ?? null}
+              longitude={selectedCoordinates?.lon ?? null}
             />
           </ErrorBoundary>
         )}

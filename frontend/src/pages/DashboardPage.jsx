@@ -37,7 +37,8 @@ export default function DashboardPage({
   const effectiveRain = Math.max(current.precipitation || 0.0, todayRain);
   const riskScore = Number.isFinite(todayRisk.risk_score) ? todayRisk.risk_score : 22.0;
   const riskLevel = todayRisk.risk_level || 'LOW';
-  const riskConfidence = Number.isFinite(todayRisk.confidence) ? Math.min(todayRisk.confidence, 0.88) : 0.84;
+  // Pass the computed value straight through (was clamped to a maximum of 0.88).
+  const riskConfidence = Number.isFinite(todayRisk.confidence) ? todayRisk.confidence : null;
   const riskFactors = (Array.isArray(todayRisk.key_factors) && todayRisk.key_factors.length > 0)
     ? todayRisk.key_factors
     : [

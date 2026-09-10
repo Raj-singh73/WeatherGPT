@@ -521,7 +521,9 @@ def get_forecast(
                         )
                     except Exception as err:
                         print(f"[WARN] Risk assessment failed for {times[i]}: {err}")
-                        risk_assessment = {"risk_score": 15.0, "risk_level": "LOW", "confidence": 0.84, "key_factors": [], "recommendation": "Normal weather conditions."}
+                        risk_assessment = {"risk_score": 0.0, "risk_level": "UNAVAILABLE", "confidence": None,
+                                           "key_factors": ["Verified information is currently unavailable."],
+                                           "recommendation": "No impact estimate is available for this day."}
                     
                     daily_items.append(DailyForecastItem(
                         date=times[i],
@@ -533,14 +535,23 @@ def get_forecast(
                         wind_gust_max=g,
                         weather_code=wc,
                         weather_description=WEATHER_CODE_DESCRIPTIONS.get(wc, "Clear"),
-                        risk_score=risk_assessment.get("risk_score", 15.0),
-                        risk_level=risk_assessment.get("risk_level", "LOW"),
-                        confidence=risk_assessment.get("confidence", 0.84),
+                        risk_score=risk_assessment.get("risk_score", 0.0),
+                        risk_level=risk_assessment.get("risk_level", "UNAVAILABLE"),
+                        confidence=risk_assessment.get("confidence"),
                         key_factors=risk_assessment.get("key_factors", []),
                         recommendation=risk_assessment.get("recommendation", "Normal weather conditions."),
                         precipitation_probability_max=p_prob,
                         precipitation_hours=p_hrs,
-                        precipitation_category=p_cat
+                        precipitation_category=p_cat,
+                        method=risk_assessment.get("method"),
+                        is_machine_learning=risk_assessment.get("is_machine_learning"),
+                        dominant_hazard=risk_assessment.get("dominant_hazard"),
+                        dominant_band=risk_assessment.get("dominant_band"),
+                        hazard_components=risk_assessment.get("hazard_components"),
+                        inputs_available=risk_assessment.get("inputs_available"),
+                        rainfall_anomaly=risk_assessment.get("rainfall_anomaly"),
+                        antecedent_quality=risk_assessment.get("antecedent_quality"),
+                        provenance=risk_assessment.get("provenance"),
                     ))
     except Exception as e:
         print(f"[WARN] Live forecast failed: {e}. Generating offline forecast.")
@@ -563,7 +574,9 @@ def get_forecast(
                     location=name, lat=lat_val, lon=lon_val, t_max=tm, t_min=tn, precipitation=p, wind_gust=g, climatology=clim, weather_code=wc, date_str=date_str
                 )
             except Exception as err:
-                risk_assessment = {"risk_score": 15.0, "risk_level": "LOW", "confidence": 0.84, "key_factors": [], "recommendation": "Normal weather conditions."}
+                risk_assessment = {"risk_score": 0.0, "risk_level": "UNAVAILABLE", "confidence": None,
+                                           "key_factors": ["Verified information is currently unavailable."],
+                                           "recommendation": "No impact estimate is available for this day."}
 
             daily_items.append(DailyForecastItem(
                 date=date_str,
@@ -575,14 +588,23 @@ def get_forecast(
                 wind_gust_max=g,
                 weather_code=wc,
                 weather_description="Moderate rain" if p > 10 else "Mainly clear",
-                risk_score=risk_assessment.get("risk_score", 15.0),
-                risk_level=risk_assessment.get("risk_level", "LOW"),
-                confidence=risk_assessment.get("confidence", 0.84),
+                risk_score=risk_assessment.get("risk_score", 0.0),
+                risk_level=risk_assessment.get("risk_level", "UNAVAILABLE"),
+                confidence=risk_assessment.get("confidence"),
                 key_factors=risk_assessment.get("key_factors", []),
                 recommendation=risk_assessment.get("recommendation", "Normal weather conditions."),
                 precipitation_probability_max=p_prob,
                 precipitation_hours=round(p * 0.4, 1) if p > 0 else 0.0,
-                precipitation_category=get_precipitation_category(p, p_prob)
+                precipitation_category=get_precipitation_category(p, p_prob),
+                method=risk_assessment.get("method"),
+                is_machine_learning=risk_assessment.get("is_machine_learning"),
+                dominant_hazard=risk_assessment.get("dominant_hazard"),
+                dominant_band=risk_assessment.get("dominant_band"),
+                hazard_components=risk_assessment.get("hazard_components"),
+                inputs_available=risk_assessment.get("inputs_available"),
+                rainfall_anomaly=risk_assessment.get("rainfall_anomaly"),
+                antecedent_quality=risk_assessment.get("antecedent_quality"),
+                provenance=risk_assessment.get("provenance"),
             ))
             
     res = WeatherForecastResponse(

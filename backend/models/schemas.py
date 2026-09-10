@@ -58,12 +58,22 @@ class DailyForecastItem(BaseModel):
     weather_description: str
     risk_score: float
     risk_level: str
-    confidence: Optional[float] = 0.84
+    confidence: Optional[float] = None
     key_factors: Optional[List[str]] = []
     recommendation: Optional[str] = ""
     precipitation_probability_max: Optional[float] = 0.0
     precipitation_hours: Optional[float] = 0.0
     precipitation_category: Optional[str] = "No Rain"
+    # --- additive: impact-index provenance ---
+    method: Optional[str] = None
+    is_machine_learning: Optional[bool] = None
+    dominant_hazard: Optional[str] = None
+    dominant_band: Optional[str] = None
+    hazard_components: Optional[List[Dict[str, Any]]] = None
+    inputs_available: Optional[str] = None
+    rainfall_anomaly: Optional[Dict[str, Any]] = None
+    antecedent_quality: Optional[str] = None
+    provenance: Optional[Dict[str, Any]] = None
 
 class WeatherForecastResponse(BaseModel):
     location: str
@@ -105,11 +115,28 @@ class RiskPredictionResponse(BaseModel):
     risk_score: float = Field(..., ge=0.0, le=100.0)
     risk_level: str
     risk_level_code: int
-    confidence: float
-    class_probabilities: Dict[str, float]
+    confidence: Optional[float] = None
+    class_probabilities: Dict[str, float] = {}
     key_factors: List[str]
     recommendation: str
-    disclaimer: str = "AI-generated risk assessment — verify with official authorities for emergency decisions."
+    disclaimer: str = (
+        "WeatherGPT Weather Impact Index — a deterministic index computed from observed "
+        "and forecast values, not an official forecast or warning. IMD remains the "
+        "authoritative source; verify before any emergency decision."
+    )
+    # --- additive: impact-index provenance (all optional; nothing removed) ---
+    method: Optional[str] = None
+    is_machine_learning: Optional[bool] = None
+    dominant_hazard: Optional[str] = None
+    dominant_band: Optional[str] = None
+    hazard_components: Optional[List[Dict[str, Any]]] = None
+    inputs_available: Optional[str] = None
+    season: Optional[str] = None
+    rainfall_anomaly: Optional[Dict[str, Any]] = None
+    antecedent_quality: Optional[str] = None
+    antecedent_source: Optional[str] = None
+    estimate_available: Optional[bool] = True
+    provenance: Optional[Dict[str, Any]] = None
 
 class AlertItem(BaseModel):
     id: str

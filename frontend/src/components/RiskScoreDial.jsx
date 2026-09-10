@@ -5,7 +5,7 @@ import { getTranslation } from '../translations';
 export default function RiskScoreDial({ 
   riskScore = 22, 
   riskLevel = 'LOW', 
-  confidence = 0.95, 
+  confidence = null,
   keyFactors = [], 
   recommendation = 'Normal weather conditions.',
   metrics = {},
@@ -74,7 +74,7 @@ export default function RiskScoreDial({
         <div className="flex items-center justify-between mb-4">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              {language === 'hi' ? 'एआई जोखिम मूल्यांकन' : 'AI Risk Assessment'}
+              {language === 'en' ? 'AI Risk Assessment' : 'एआई जोखिम मूल्यांकन'}
             </span>
             <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-1.5 mt-0.5">
               <ShieldAlert className={`h-4 w-4 ${theme.color}`} />
@@ -94,9 +94,19 @@ export default function RiskScoreDial({
             </span>
             <span className="text-xl font-bold text-slate-400 ml-1">/ 100</span>
           </div>
+          {/* The previous version clamped this display to 72-88%, so every
+              reading looked equally confident no matter what was computed.
+              This now shows how many hazard inputs were backed by real data,
+              and shows a dash rather than inventing a value when unknown. */}
           <div className="text-xs text-slate-600 border-l border-slate-200 pl-3">
-            <p className="font-bold text-slate-800">{tr.confidence}: {Math.min(Math.max(Math.round(confidence <= 1 ? confidence * 100 : confidence), 72), 88)}%</p>
-            <p className="text-[11px] text-slate-500">HistGradientBoosting Model</p>
+            {Number.isFinite(confidence) ? (
+              <p className="font-bold text-slate-800">
+                {tr.confidence}: {Math.round(confidence <= 1 ? confidence * 100 : confidence)}%
+              </p>
+            ) : (
+              <p className="font-bold text-slate-500">{tr.confidence}: —</p>
+            )}
+            <p className="text-[11px] text-slate-500">Multi-hazard Impact Index</p>
           </div>
         </div>
 
@@ -148,7 +158,7 @@ export default function RiskScoreDial({
           <div className="flex items-center gap-1.5 mb-2">
             <Info className={`h-4 w-4 ${theme.color}`} />
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-              {tr.factorsTitle || (language === 'hi' ? 'यह जोखिम स्कोर क्यों?' : 'Why this risk score?')}
+              {tr.factorsTitle || (language === 'en' ? 'Why this risk score?' : 'यह जोखिम स्कोर क्यों?')}
             </h4>
           </div>
           <ul className="space-y-1.5 text-xs text-slate-700">
@@ -162,21 +172,21 @@ export default function RiskScoreDial({
             ) : (
               <li className="flex items-start gap-1.5 text-slate-600">
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                <span>{language === 'hi' ? 'सभी मौसमी पैरामीटर सामान्य मौसमी सीमा के भीतर हैं।' : 'All atmospheric & hydrological parameters within seasonal thresholds.'}</span>
+                <span>{language === 'en' ? 'All atmospheric & hydrological parameters within seasonal thresholds.' : 'सभी मौसमी पैरामीटर सामान्य मौसमी सीमा के भीतर हैं।'}</span>
               </li>
             )}
           </ul>
           <div className="mt-3 pt-2.5 border-t border-slate-200 text-xs text-slate-800 leading-relaxed">
-            <strong className="text-slate-900">{tr.recommendationTitle || (language === 'hi' ? 'कार्रवाई निर्देश:' : 'Action Directive:')}</strong> {recommendation}
+            <strong className="text-slate-900">{tr.recommendationTitle || (language === 'en' ? 'Action Directive:' : 'कार्रवाई निर्देश:')}</strong> {recommendation}
           </div>
         </div>
       </div>
 
       {/* Honest Disclaimer */}
       <p className="text-[10px] text-slate-400 mt-4 italic text-center">
-        {language === 'hi'
-          ? '“एआई-जनरेटेड जोखिम मूल्यांकन — आपात स्थिति में आधिकारिक अधिकारियों से पुष्टि करें।”'
-          : '“AI-generated risk assessment — verify with official authorities for emergency decisions.”'}
+        {language === 'en'
+          ? '“AI-generated risk assessment — verify with official authorities for emergency decisions.”'
+          : '“एआई-जनरेटेड जोखिम मूल्यांकन — आपात स्थिति में आधिकारिक अधिकारियों से पुष्टि करें।”'}
       </p>
     </div>
   );

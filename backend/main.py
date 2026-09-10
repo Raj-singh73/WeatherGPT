@@ -8,6 +8,7 @@ import os
 import sys
 from pathlib import Path
 from contextlib import asynccontextmanager
+from typing import Optional
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -100,12 +101,51 @@ def health_check():
 
 @app.get("/api/cyclone/live-systems", tags=["Cyclone Intelligence"])
 def get_cyclone_live_systems():
+    """Low-pressure systems detected from the LIVE mean-sea-level pressure field.
+
+    This previously returned two hardcoded dictionaries, including a fictional
+    storm named 'DANA' with a frozen timestamp. It now scans the Bay of Bengal
+    and Arabian Sea for real pressure minima and reports only what it finds -
+    or explicitly reports that nothing was found.
+
+    Model estimate, never an official warning.
     """
-    Returns genuine barometric high/low pressure differentials,
-    cyclone intensity (Atkinson-Holliday relationship), and landfall prediction tracks.
-    """
-    from services.cyclone_service import get_active_cyclone_systems
-    return get_active_cyclone_systems()
+    from services.cyclone_detect import detect_active_systems
+    return detect_active_systems()
+
+
+@app.get("/api/cyclone/risk", tags=["Cyclone Intelligence"])
+def get_cyclone_risk(
+    location: str = "Nagpur",
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+):
+    """Cyclone risk for ONE location, from detected systems plus local conditions."""
+    from services.cyclone_detect import cyclone_risk_for_location
+    from services.weather_service import resolve_location, get_current_weather
+    from services.alert_service import is_coastal_location
+
+    name, state, lat_val, lon_val, _clim = resolve_location(location, lat, lon)
+
+    gust = pressure = None
+    try:
+        cur = get_current_weather(location, lat=lat_val, lon=lon_val)
+        gust = cur.current.wind_gust
+        pressure = cur.current.surface_pressure
+    except Exception as e:
+        print(f"[WARN] Local conditions unavailable for cyclone risk at {name}: {e}")
+
+    try:
+        coastal = is_coastal_location(name, state, lat_val, lon_val)
+    except Exception:
+        coastal = None
+
+    result = cyclone_risk_for_location(
+        name, lat_val, lon_val,
+        is_coastal=coastal, local_gust_kmh=gust, local_pressure_hpa=pressure)
+    result.update({"state": state, "latitude": lat_val, "longitude": lon_val,
+                   "is_coastal": coastal})
+    return result
 
 if __name__ == "__main__":
     import uvicorn

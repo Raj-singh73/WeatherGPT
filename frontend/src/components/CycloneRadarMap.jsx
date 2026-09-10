@@ -34,7 +34,10 @@ export default function CycloneRadarMap({ activeSystem }) {
   if (!activeSystem) return null;
 
   const currentPos = activeSystem.current_position || { lat: 17.8, lon: 86.4 };
-  const ridgePos = activeSystem.high_pressure_ridge || { lat: 22.5, lon: 78.5 };
+  // The detector reports a steering ridge only when one is actually resolved in
+  // the pressure field. Previously this fell back to fixed coordinates, drawing
+  // an "H" marker for a ridge that had not been measured.
+  const ridgePos = activeSystem.high_pressure_ridge || null;
   const landfall = activeSystem.landfall_prediction || {};
   const forecastTrack = activeSystem.forecast_track || [];
 
@@ -134,6 +137,7 @@ export default function CycloneRadarMap({ activeSystem }) {
           </Marker>
 
           {/* High Pressure Blocking Ridge Marker (H) */}
+          {ridgePos && (
           <Marker position={[ridgePos.lat, ridgePos.lon]} icon={createPressureIcon('H', '#2563eb')}>
             <Popup>
               <div className="p-1.5 text-xs text-slate-800">
@@ -143,6 +147,7 @@ export default function CycloneRadarMap({ activeSystem }) {
               </div>
             </Popup>
           </Marker>
+          )}
 
           {/* Predicted Landfall Target Marker */}
           {landfall.landfall_lat && (

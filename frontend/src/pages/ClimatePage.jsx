@@ -27,8 +27,9 @@ import {
 import api from '../api';
 import { getTranslation } from '../translations';
 import CycloneRadarMap from '../components/CycloneRadarMap';
+import CycloneStatusPanel from '../components/CycloneStatusPanel';
 
-export default function ClimatePage({ language = 'en' }) {
+export default function ClimatePage({ language = 'en', location = 'Nagpur', latitude = null, longitude = null }) {
   const t = getTranslation(language)?.climate || {};
   const [activeSubTab, setActiveSubTab] = useState('pressure_cyclone'); // 'pressure_cyclone' or 'historical_trends'
   const [climateData, setClimateData] = useState(null);
@@ -37,14 +38,21 @@ export default function ClimatePage({ language = 'en' }) {
   const [hasError, setHasError] = useState(false);
   const [selectedDecade, setSelectedDecade] = useState('ALL');
   const [selectedSystemIdx, setSelectedSystemIdx] = useState(0);
+  const [cycloneRisk, setCycloneRisk] = useState(null);
 
   const fetchData = () => {
     setIsLoading(true);
     setHasError(false);
     Promise.allSettled([
       api.getClimateTrends(),
-      api.getCycloneSystems()
-    ]).then(([trendsRes, cycloneRes]) => {
+      api.getCycloneSystems(),
+      api.getCycloneRisk(location, latitude, longitude)
+    ]).then(([trendsRes, cycloneRes, riskRes]) => {
+      if (riskRes.status === 'fulfilled' && riskRes.value) {
+        setCycloneRisk(riskRes.value);
+      } else {
+        setCycloneRisk(null);
+      }
       let loadedAny = false;
       if (trendsRes.status === 'fulfilled' && trendsRes.value) {
         setClimateData(trendsRes.value);
@@ -65,7 +73,9 @@ export default function ClimatePage({ language = 'en' }) {
 
   useEffect(() => {
     fetchData();
-  }, []);
+    // Re-run when the user switches location so the per-location cyclone risk
+    // follows the rest of the app.
+  }, [location, latitude, longitude]);
 
   const rawTrends = climateData?.cyclone_trends || [];
   const filteredTrends = selectedDecade === 'ALL' 
@@ -162,11 +172,19 @@ export default function ClimatePage({ language = 'en' }) {
       ) : activeSubTab === 'pressure_cyclone' ? (
         /* TAB 1: GENUINE PRESSURE GRADIENT & CYCLONE GENESIS */
         <div className="space-y-6">
+          {/* Detection status: unavailable / nothing found / per-location risk */}
+          <CycloneStatusPanel
+            scan={cycloneData}
+            risk={cycloneRisk}
+            locationName={location}
+            language={language}
+          />
+
           {/* Active Synoptic Systems Selector Pills */}
           {systems.length > 0 && (
             <div className="flex items-center gap-2 overflow-x-auto pb-1">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex-shrink-0">
-                {language === 'hi' ? 'सक्रिय समुद्री अवदाब / चक्रवात:' : 'Active Marine Systems:'}
+                {language === 'en' ? 'Active Marine Systems:' : 'सक्रिय समुद्री अवदाब / चक्रवात:'}
               </span>
               {systems.map((sys, idx) => (
                 <button
@@ -211,24 +229,27 @@ export default function ClimatePage({ language = 'en' }) {
                     <span>{activeSystem.basin}</span>
                     <span>•</span>
                     <span>
-                      {language === 'hi' ? 'वर्तमान स्थान:' : 'Current Center:'}{' '}
-                      {activeSystem.current_position?.location_name || `${activeSystem.current_position?.lat ?? 18}°N, ${activeSystem.current_position?.lon ?? 85}°E`}
+                      {language === 'en' ? 'Current Center:' : 'वर्तमान स्थान:'}{' '}
+                      {activeSystem.current_position?.location_name
+                        || (activeSystem.current_position?.lat != null
+                            ? `${activeSystem.current_position.lat}°N, ${activeSystem.current_position.lon}°E`
+                            : '—')}
                     </span>
                   </p>
                 </div>
 
                 <div className="flex items-center gap-3">
                   <div className="bg-white px-3.5 py-2 rounded-2xl border border-rose-200 text-center shadow-xs">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">{language === 'hi' ? 'केंद्रीय दबाव' : 'Central Pressure'}</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">{language === 'en' ? 'Central Pressure' : 'केंद्रीय दबाव'}</span>
                     <span className="text-xl font-black text-rose-700">{activeSystem.central_pressure_hpa} <span className="text-xs text-slate-500">hPa</span></span>
                   </div>
                   <div className="bg-white px-3.5 py-2 rounded-2xl border border-rose-200 text-center shadow-xs">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">{language === 'hi' ? 'अधिकतम हवा' : 'Peak Wind'}</span>
-                    <span className="text-xl font-black text-sky-700">{activeSystem.vmax_kmh ?? activeSystem.max_sustained_wind_kmh ?? 110} <span className="text-xs text-slate-500">km/h</span></span>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">{language === 'en' ? 'Peak Wind' : 'अधिकतम हवा'}</span>
+                    <span className="text-xl font-black text-sky-700">{activeSystem.vmax_kmh ?? activeSystem.max_sustained_wind_kmh ?? '—'} <span className="text-xs text-slate-500">km/h</span></span>
                   </div>
                   {activeSystem.gust_kmh && (
                     <div className="bg-white px-3.5 py-2 rounded-2xl border border-amber-200 text-center shadow-xs">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">{language === 'hi' ? 'झोंके' : 'Gusts'}</span>
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">{language === 'en' ? 'Gusts' : 'झोंके'}</span>
                       <span className="text-xl font-black text-amber-700">{activeSystem.gust_kmh} <span className="text-xs text-slate-500">km/h</span></span>
                     </div>
                   )}
@@ -238,21 +259,29 @@ export default function ClimatePage({ language = 'en' }) {
               {/* Landfall & Forecast Warning */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs mb-4">
                 <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
-                  <span className="text-slate-500 font-medium block">{language === 'hi' ? 'अनुमानित लैंडफॉल:' : 'Projected Landfall Zone:'}</span>
+                  <span className="text-slate-500 font-medium block">{language === 'en' ? 'Projected Landfall Zone:' : 'अनुमानित लैंडफॉल:'}</span>
                   <strong className="text-slate-900 font-bold">
-                    {activeSystem.landfall_prediction?.predicted_point || activeSystem.landfall_prediction?.target_coast || activeSystem.projected_landfall || 'Open Ocean / No direct landfall'}
+                    {activeSystem.landfall_prediction?.predicted_point
+                      || activeSystem.landfall_prediction?.target_coast
+                      || activeSystem.projected_landfall
+                      || 'Not forecast — track projection only'}
                   </strong>
                 </div>
                 <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
-                  <span className="text-slate-500 font-medium block">{language === 'hi' ? 'स्टीयरिंग रिड्ज प्रभाव:' : 'High Pressure Steering:'}</span>
+                  <span className="text-slate-500 font-medium block">{language === 'en' ? 'High Pressure Steering:' : 'स्टीयरिंग रिड्ज प्रभाव:'}</span>
                   <strong className="text-slate-900 font-bold">
-                    {activeSystem.high_pressure_ridge?.steering_influence || (activeSystem.movement_direction ? `${activeSystem.movement_direction} at ${activeSystem.speed_kmh} km/h` : 'Deflecting Northwest')}
+                    {activeSystem.high_pressure_ridge?.steering_influence
+                      || (activeSystem.movement
+                          ? `${activeSystem.movement.direction} at ${activeSystem.movement.speed_kmh} km/h`
+                          : (activeSystem.movement_direction
+                              ? `${activeSystem.movement_direction} at ${activeSystem.speed_kmh} km/h`
+                              : 'Not resolved'))}
                   </strong>
                 </div>
                 <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
-                  <span className="text-slate-500 font-medium block">{language === 'hi' ? 'तूफानी ज्वार (Surge):' : 'Storm Surge Potential:'}</span>
+                  <span className="text-slate-500 font-medium block">{language === 'en' ? 'Storm Surge Potential:' : 'तूफानी ज्वार (Surge):'}</span>
                   <strong className="text-rose-700 font-bold">
-                    {activeSystem.estimated_surge_m ?? activeSystem.storm_surge_meters ?? 0} meters
+                    {activeSystem.estimated_surge_m ?? activeSystem.storm_surge_meters ?? '—'} meters
                   </strong>
                 </div>
               </div>
@@ -261,7 +290,7 @@ export default function ClimatePage({ language = 'en' }) {
               {activeSystem.landfall_prediction?.impact_districts?.length > 0 && (
                 <div className="mb-4 bg-white p-3.5 rounded-2xl border border-rose-100">
                   <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-2">
-                    {language === 'hi' ? '🚨 प्रभावित होने वाले उच्च जोखिम तटीय जिले:' : '🚨 High-Alert Coastal Impact Districts:'}
+                    {language === 'en' ? '🚨 High-Alert Coastal Impact Districts:' : '🚨 प्रभावित होने वाले उच्च जोखिम तटीय जिले:'}
                   </span>
                   <div className="flex flex-wrap gap-2">
                     {activeSystem.landfall_prediction.impact_districts.map((d, dIdx) => (
@@ -288,15 +317,15 @@ export default function ClimatePage({ language = 'en' }) {
               {(activeSystem.forecast_track || activeSystem.track_forecast) && (
                 <div className="bg-white rounded-2xl border border-slate-200 overflow-x-auto shadow-xs p-4">
                   <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">
-                    {language === 'hi' ? 'संभावित चक्रवात पथ व तीव्रता प्रक्षेपण (Track Forecast):' : 'Projected Track & Intensity Trajectory:'}
+                    {language === 'en' ? 'Projected Track & Intensity Trajectory:' : 'संभावित चक्रवात पथ व तीव्रता प्रक्षेपण (Track Forecast):'}
                   </h4>
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr className="border-b border-slate-100 text-slate-400 uppercase font-semibold text-[10px]">
-                        <th className="pb-2">{language === 'hi' ? 'समय' : 'Timestamp'}</th>
-                        <th className="pb-2">{language === 'hi' ? 'अक्षांश/देशांतर' : 'Position'}</th>
-                        <th className="pb-2">{language === 'hi' ? 'दबाव (hPa)' : 'Pressure (hPa)'}</th>
-                        <th className="pb-2">{language === 'hi' ? 'हवा / तीव्रता' : 'Intensity'}</th>
+                        <th className="pb-2">{language === 'en' ? 'Timestamp' : 'समय'}</th>
+                        <th className="pb-2">{language === 'en' ? 'Position' : 'अक्षांश/देशांतर'}</th>
+                        <th className="pb-2">{language === 'en' ? 'Pressure (hPa)' : 'दबाव (hPa)'}</th>
+                        <th className="pb-2">{language === 'en' ? 'Intensity' : 'हवा / तीव्रता'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -319,7 +348,7 @@ export default function ClimatePage({ language = 'en' }) {
           <div className="bg-gradient-to-r from-sky-50 via-white to-indigo-50 border border-sky-100 rounded-2xl p-5 text-xs text-slate-700 shadow-sm leading-relaxed">
             <h4 className="font-extrabold text-slate-900 mb-1 flex items-center gap-1.5 text-sm">
               <Compass className="h-4 w-4 text-sky-600" />
-              {language === 'hi' ? 'वायुमंडलीय दबाव से चक्रवात कैसे उत्पन्न होते हैं:' : 'How High vs Low Pressure Systems Create Cyclones:'}
+              {language === 'en' ? 'How High vs Low Pressure Systems Create Cyclones:' : 'वायुमंडलीय दबाव से चक्रवात कैसे उत्पन्न होते हैं:'}
             </h4>
             <p className="mt-1 text-slate-600">
               {cycloneData?.physics_explanation || 'Cyclogenesis is driven by intense marine surface heating causing deep convective updrafts and low pressure formation.'}

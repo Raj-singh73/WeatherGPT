@@ -206,7 +206,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
                       {alert.severity} ({alert.imd_color_code || 'WATCH'})
                     </span>
                     <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-white text-slate-700 border border-slate-200">
-                      {alert.is_demo ? (language === 'hi' ? 'एआई पूर्व चेतावनी (सिम्युलेटेड)' : 'SIMULATED EARLY WARNING') : 'OFFICIAL'}
+                      {alert.is_demo ? (language === 'en' ? 'SIMULATED EARLY WARNING' : 'एआई पूर्व चेतावनी (सिम्युलेटेड)') : 'OFFICIAL'}
                     </span>
                   </div>
                 </div>
@@ -219,10 +219,10 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
                   </span>
                   <span className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
                     <Clock className="h-3.5 w-3.5 text-slate-500" />
-                    {language === 'hi' ? 'वैधता:' : 'Valid Through:'} <strong className="text-slate-900">{alert.valid_until}</strong>
+                    {language === 'en' ? 'Valid Through:' : 'वैधता:'} <strong className="text-slate-900">{alert.valid_until}</strong>
                   </span>
                   <span className="text-slate-500 text-[11px]">
-                    {language === 'hi' ? 'जारी:' : 'Issued:'} {alert.issued_time}
+                    {language === 'en' ? 'Issued:' : 'जारी:'} {alert.issued_time}
                   </span>
                 </div>
 
@@ -230,7 +230,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
                 {alert.key_thresholds && alert.key_thresholds.length > 0 && (
                   <div className="mb-4 flex flex-wrap items-center gap-2">
                     <span className="text-[10px] uppercase font-bold text-slate-400">
-                      {language === 'hi' ? 'ट्रिगर पैरामीटर:' : 'Trigger Thresholds:'}
+                      {language === 'en' ? 'Trigger Thresholds:' : 'ट्रिगर पैरामीटर:'}
                     </span>
                     {alert.key_thresholds.map((th, idx) => (
                       <span 
@@ -246,7 +246,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
                 {/* Technical Atmospheric Summary */}
                 <div className="bg-white/90 p-4 rounded-2xl border border-slate-200 mb-4 text-xs text-slate-800 leading-relaxed font-medium shadow-xs">
                   <strong className="block text-slate-900 font-extrabold text-[11px] uppercase tracking-wider mb-1 text-sky-900">
-                    {language === 'hi' ? 'मौसम विज्ञान विश्लेषण एवं चालक कारक:' : 'Synoptic Assessment & Meteorological Drivers:'}
+                    {language === 'en' ? 'Synoptic Assessment & Meteorological Drivers:' : 'मौसम विज्ञान विश्लेषण एवं चालक कारक:'}
                   </strong>
                   <p>{alert.summary}</p>
                 </div>
@@ -256,7 +256,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
                   <div className="bg-rose-50/90 border border-rose-200 rounded-2xl p-4 mb-4 shadow-xs">
                     <h4 className="font-black text-rose-950 text-xs uppercase tracking-wider mb-2.5 flex items-center gap-2">
                       <LifeBuoy className="h-4 w-4 text-rose-600" />
-                      <span>{language === 'hi' ? 'जीवन रक्षा दिशानिर्देश (Life Survival Protocols):' : 'Life Survival Actionable Protocols:'}</span>
+                      <span>{language === 'en' ? 'Life Survival Actionable Protocols:' : 'जीवन रक्षा दिशानिर्देश (Life Survival Protocols):'}</span>
                     </h4>
                     <ul className="space-y-2 text-xs text-rose-900">
                       {alert.life_survival_protocols.map((protocol, pIdx) => (
@@ -273,7 +273,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
                 <div className="bg-white rounded-2xl p-4 border border-slate-200 text-xs shadow-xs mb-4">
                   <h4 className="font-extrabold text-sky-900 uppercase tracking-wider text-[11px] mb-1.5 flex items-center gap-1.5">
                     <CheckCircle2 className="h-4 w-4 text-sky-600" />
-                    <span>{t.actionTitle || (language === 'hi' ? 'नागरिक व आजीविका सुरक्षा निर्देश:' : 'Livelihood, Commuter & Agricultural Protection:')}</span>
+                    <span>{t.actionTitle || (language === 'en' ? 'Livelihood, Commuter & Agricultural Protection:' : 'नागरिक व आजीविका सुरक्षा निर्देश:')}</span>
                   </h4>
                   <p className="text-slate-700 leading-relaxed font-medium">
                     {alert.action_instructions}
@@ -285,7 +285,7 @@ export default function AlertsPage({ alerts = [], location = 'Nagpur', language 
                   <div className="pt-3 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
                     <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
                       <PhoneCall className="h-3.5 w-3.5 text-rose-600" />
-                      {language === 'hi' ? 'आपातकालीन हेल्पलाइन:' : 'Emergency Helplines:'}
+                      {language === 'en' ? 'Emergency Helplines:' : 'आपातकालीन हेल्पलाइन:'}
                     </span>
                     <div className="flex flex-wrap gap-1.5">
                       {Object.entries(alert.emergency_contacts).map(([agency, number]) => (

@@ -1730,8 +1730,208 @@ export const translations = {
       "disclaimerTitle": "ચેતવણી",
       "disclaimerText": "આ એક નિર્ણય સહાયક સાધન છે. આપત્તિના સમયે હંમેશા સત્તાવાર આદેશોનું પાલન કરો."
     }
+  },
+  "kn": {
+    "common": {
+      "locale": "kn-IN"
+    },
+    "nav": {
+      "dashboard": "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್",
+      "chat": "WeatherGPT ಕೇಳಿರಿ",
+      "forecast": "ಹವಾಮಾನ ಮುನ್ಸೂಚನೆ",
+      "alerts": "ಅಪಾಯಗಳು & ಎಚ್ಚರಿಕೆಗಳು",
+      "farmer": "ರೈತ ಮೋಡ್",
+      "climate": "ಹವಾಮಾನ & ಚಕ್ರವಾತ",
+      "about": "ಬಗ್ಗೆ",
+      "voiceAssistant": "ಧ್ವನಿ ಸಹಾಯಕ"
+    }
+  },
+  "ml": {
+    "common": {
+      "locale": "ml-IN"
+    },
+    "nav": {
+      "dashboard": "ഡാഷ്‌ബോർഡ്",
+      "chat": "വെതർGPT ചോദിക്കൂ",
+      "forecast": "അനുമാനം",
+      "alerts": "അപകടങ്ങൾ & അലേർട്ടുകൾ",
+      "farmer": "കൃഷകൻ മോഡ്",
+      "climate": "കാലാവസ്ഥ & ചക്രവാതം",
+      "about": "വിവരം",
+      "voiceAssistant": "വോയ്‌സ് അസിസ്റ്റന്റ്"
+    }
+  },
+  "pa": {
+    "common": {
+      "locale": "pa-IN"
+    },
+    "nav": {
+      "dashboard": "ਡੈਸ਼ਬੋਰਡ",
+      "chat": "WeatherGPT ਨਾਲ ਪੁੱਛੋ",
+      "forecast": "ਪੂਰਵਾਨੁਮਾਨ",
+      "alerts": "ਖਤਰੇ & ਅਲਰਟ",
+      "farmer": "ਕਿਸਾਨ ਮੋਡ",
+      "climate": "ਕਲਾਈਮੈਟ & ਸਾਇਕਲੋਨ",
+      "about": "ਬਾਰੇ",
+      "voiceAssistant": "ਵੌਇਸ ਅਸਿਸਟੈਂਟ"
+    }
+  },
+  "or": {
+    "common": {
+      "locale": "or-IN"
+    },
+    "nav": {
+      "dashboard": "ଡ୍ୟାସ୍‌ବୋର୍ଡ",
+      "chat": "WeatherGPT କୁ ପଚାରନ୍ତୁ",
+      "forecast": "ପୂର୍ବାନୁମାନ",
+      "alerts": "ଜୋକିମ ଏବଂ ଆଲର୍ଟ",
+      "farmer": "କୃଷକ ମୋଡ୍",
+      "climate": "ଜଳବାୟୁ ଏବଂ ସାଇକ୍ଲୋନ୍",
+      "about": "ସମ୍ବନ୍ଧରେ",
+      "voiceAssistant": "ଭଏସ୍ ଆସିଷ୍ଟାଣ୍ଟ"
+    }
+  },
+  "as": {
+    "common": {
+      "locale": "as-IN"
+    },
+    "nav": {
+      "dashboard": "ডেশ্বব'ৰ্ড",
+      "chat": "WeatherGPT লৈ সোধি",
+      "forecast": "ভবিষ্যতৰ পূর্বাভাস",
+      "alerts": "ঝুঁকি আৰু সতর্কতা",
+      "farmer": "কৃষক মোড",
+      "climate": "জলবায়ু আৰু সাইক্লোন",
+      "about": "সম্বন্ধে",
+      "voiceAssistant": "ভইচি সহায়ক"
+    }
+  },
+  "ur": {
+    "common": {
+      "locale": "ur-IN"
+    },
+    "nav": {
+      "dashboard": "ڈیش بورڈ",
+      "chat": "WeatherGPT سے پوچھیں",
+      "forecast": "پیش گوئی",
+      "alerts": "خطرات اور الرٹس",
+      "farmer": "فارمر موڈ",
+      "climate": "آب و ہوا اور سائیکلون",
+      "about": "معلومات",
+      "voiceAssistant": "صوتی معاون"
+    }
   }
 };
+
+const englishBase = JSON.parse(JSON.stringify(translations.en));
+
+const newLanguageOverrides = {
+  kn: {
+    nav: {
+      dashboard: 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್',
+      chat: 'WeatherGPT ಕೇಳಿರಿ',
+      forecast: 'ಹವಾಮಾನ ಮುನ್ಸೂಚನೆ',
+      alerts: 'ಅಪಾಯಗಳು & ಎಚ್ಚರಿಕೆಗಳು',
+      farmer: 'ರೈತ ಮೋಡ್',
+      climate: 'ಹವಾಮಾನ & ಚಕ್ರವಾತ',
+      about: 'ಬಗ್ಗೆ',
+      voiceAssistant: 'ಧ್ವನಿ ಸಹಾಯಕ'
+    },
+    common: {
+      locale: 'kn-IN'
+    }
+  },
+  ml: {
+    nav: {
+      dashboard: 'ഡാഷ്‌ബോർഡ്',
+      chat: 'വെതർGPT ചോദിക്കൂ',
+      forecast: 'അനുമാനം',
+      alerts: 'അപകടങ്ങൾ & അലേർട്ടുകൾ',
+      farmer: 'കൃഷകൻ മോഡ്',
+      climate: 'കാലാവസ്ഥ & ചക്രവാതം',
+      about: 'വിവരം',
+      voiceAssistant: 'വോയ്‌സ് അസിസ്റ്റന്റ്'
+    },
+    common: {
+      locale: 'ml-IN'
+    }
+  },
+  pa: {
+    nav: {
+      dashboard: 'ਡੈਸ਼ਬੋਰਡ',
+      chat: 'WeatherGPT ਨਾਲ ਪੁੱਛੋ',
+      forecast: 'ਪੂਰਵਾਨੁਮਾਨ',
+      alerts: 'ਖਤਰੇ & ਅਲਰਟ',
+      farmer: 'ਕਿਸਾਨ ਮੋਡ',
+      climate: 'ਕਲਾਈਮੈਟ & ਸਾਇਕਲੋਨ',
+      about: 'ਬਾਰੇ',
+      voiceAssistant: 'ਵੌਇਸ ਅਸਿਸਟੈਂਟ'
+    },
+    common: {
+      locale: 'pa-IN'
+    }
+  },
+  or: {
+    nav: {
+      dashboard: 'ଡ୍ୟାସ୍‌ବୋର୍ଡ',
+      chat: 'WeatherGPT କୁ ପଚାରନ୍ତୁ',
+      forecast: 'ପୂର୍ବାନୁମାନ',
+      alerts: 'ଜୋକିମ ଏବଂ ଆଲର୍ଟ',
+      farmer: 'କୃଷକ ମୋଡ୍',
+      climate: 'ଜଳବାୟୁ ଏବଂ ସାଇକ୍ଲୋନ୍',
+      about: 'ସମ୍ବନ୍ଧରେ',
+      voiceAssistant: 'ଭଏସ୍ ଆସିଷ୍ଟାଣ୍ଟ'
+    },
+    common: {
+      locale: 'or-IN'
+    }
+  },
+  as: {
+    nav: {
+      dashboard: 'ডেশ্বব\'ৰ্ড',
+      chat: 'WeatherGPT লৈ সোধি',
+      forecast: 'ভবিষ্যতৰ পূর্বাভাস',
+      alerts: 'ঝুঁকি আৰু সতর্কতা',
+      farmer: 'কৃষক মোড',
+      climate: 'জলবায়ু আৰু সাইক্লোন',
+      about: 'সম্বন্ধে',
+      voiceAssistant: 'ভইচি সহায়ক'
+    },
+    common: {
+      locale: 'as-IN'
+    }
+  },
+  ur: {
+    nav: {
+      dashboard: 'ڈیش بورڈ',
+      chat: 'WeatherGPT سے پوچھیں',
+      forecast: 'پیش گوئی',
+      alerts: 'خطرات اور الرٹس',
+      farmer: 'فارمر موڈ',
+      climate: 'آب و ہوا اور سائیکلون',
+      about: 'معلومات',
+      voiceAssistant: 'صوتی معاون'
+    },
+    common: {
+      locale: 'ur-IN'
+    }
+  }
+};
+
+for (const [lang, override] of Object.entries(newLanguageOverrides)) {
+  translations[lang] = {
+    ...translations.en,
+    ...override,
+    nav: {
+      ...translations.en.nav,
+      ...override.nav
+    },
+    common: {
+      ...translations.en.common,
+      ...override.common
+    }
+  };
+}
 
 // Deep merge helper ensuring complete fallback to English for any missing keys
 function deepMerge(target, source) {

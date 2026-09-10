@@ -50,6 +50,8 @@ export const api = {
     client.get('/alerts', { params: { location, ...(lat != null && lon != null ? { lat, lon } : {}) } }).then(r => r.data),
   getClimateTrends: () => client.get('/climate/trends').then(r => r.data),
   getCycloneSystems: () => client.get('/cyclone/live-systems').then(r => r.data),
+  getCycloneRisk: (location = 'Nagpur', lat = null, lon = null) =>
+    client.get('/cyclone/risk', { params: { location, ...(lat != null && lon != null ? { lat, lon } : {}) } }).then(r => r.data),
   getDistrictHierarchy: (district, state) => client.get('/location/district-hierarchy', { params: { district, state } }).then(r => r.data),
   getVillagesInBlock: (block, district, state) => client.get('/location/villages', { params: { block, district, state } }).then(r => r.data),
   detectVillage: (query, block, district, state) => client.get('/location/detect-village', { params: { query, block, district, state } }).then(r => r.data),
